@@ -23,7 +23,6 @@
 	let senderPublic = $state<Uint8Array | null>(null);
 	let jobs = $state<SealJob[]>([]);
 	let running = $state(false);
-	let wrongSecret = $state(false);
 
 	// Read each file's header as soon as it is chosen: mode decides step 2, the seal number labels step 3.
 	$effect(() => {
@@ -65,7 +64,6 @@
 			mode === 'password' ? { password } : { recipientPrivate: recipientPrivate!, senderPublic: senderPublic! };
 		const streamed = streaming();
 		running = true;
-		wrongSecret = false;
 		jobs = files.map((f, i) => ({ name: outputName(f.name), seal: seals[i] ?? '', state: 'waiting', done: 0, total: f.size }));
 		for (const [i, file] of files.entries()) {
 			jobs[i].state = 'working';
@@ -78,18 +76,18 @@
 				jobs[i].message = saveUrl ? 'Decrypted, not saved yet' : 'Saved to your downloads';
 			} catch (err) {
 				const code = err instanceof JobError ? err.code : 'unknown';
-				if (code === 'wrong-secret') {
-					// Same secret for every file: stop instead of failing each one.
-					wrongSecret = true;
-					jobs = [];
-					break;
-				}
-				jobs[i].state = code === 'altered' || code === 'incomplete' ? 'torn' : 'failed';
+				// A first chunk that won't open can't tell a wrong secret from tampering, so say both.
+				jobs[i].state = code === 'wrong-secret' ? 'locked' : code === 'altered' || code === 'incomplete' ? 'torn' : 'failed';
 				jobs[i].message = failureMessage(code, streamed);
 			}
 		}
 		running = false;
-		if (wrongSecret) step = 2;
+	}
+
+	function retry() {
+		for (const j of jobs) if (j.saveUrl) URL.revokeObjectURL(j.saveUrl);
+		jobs = [];
+		step = 2;
 	}
 
 	function startOver() {
@@ -130,10 +128,7 @@
 			</div>
 		</Step>
 
-		<Step n={2} title={secretTitle} state={stateOf(2)} summary={mode === 'key' ? 'Keys' : 'Password'} onedit={editable(2)} onsubmit={() => secretOk && ((wrongSecret = false), (step = 3))}>
-			{#if wrongSecret}
-				<p class="notice danger" role="alert"><Icon name="alert" size={18} />{errorMessage['wrong-secret']} Nothing was saved.</p>
-			{/if}
+		<Step n={2} title={secretTitle} state={stateOf(2)} summary={mode === 'key' ? 'Keys' : 'Password'} onedit={editable(2)} onsubmit={() => secretOk && (step = 3)}>
 			<div class="secret">
 				{#if mode === 'password'}
 					<PasswordField bind:value={password} mode="current" />
@@ -148,7 +143,7 @@
 			</div>
 		</Step>
 
-		<Step n={3} title={unsaved ? 'Save your files' : 'Decrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.some((j) => j.state === 'intact')} onsubmit={decrypt}>
+		<Step n={3} title={unsaved ? 'Save your files' : 'Decrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.every((j) => j.state === 'intact')} onsubmit={decrypt}>
 			{#if !jobs.length}
 				<p class="summary-line">Each file is checked as it is decrypted. If anything was changed, decryption stops.</p>
 				<div class="actions">
@@ -165,7 +160,11 @@
 					{#if !unsaved && jobs.every((j) => j.state === 'intact' && j.seal)}
 						<p class="notice compare"><Icon name="check" size={18} />Every seal is intact. If the seal numbers match the sender's, you have exactly the files they sent.</p>
 					{/if}
-					<ResultActions bind:jobs moreLabel="Decrypt more files" onrestart={startOver} />
+					<ResultActions bind:jobs moreLabel="Decrypt more files" onrestart={startOver}>
+						{#if jobs.some((j) => j.state === 'locked')}
+							<button class="btn" type="button" onclick={retry}>{mode === 'key' ? 'Try other keys' : 'Try another password'}</button>
+						{/if}
+					</ResultActions>
 				{/if}
 			{/if}
 		</Step>

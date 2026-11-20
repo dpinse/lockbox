@@ -176,3 +176,19 @@ test('steps work from the keyboard and move focus to the opened step', async ({ 
 	await passwordBox(page).press('Enter');
 	await expect(page.getByRole('heading', { name: 'Encrypt and save' })).toBeFocused();
 });
+
+test('a small file that will not open stays in step 3 with a retry', async ({ page }) => {
+	await encryptWithPassword(page, [{ name: 'tiny.txt', buffer: Buffer.from('a short note') }]);
+	const sealed = await download(page, () => encryptButton(page).click());
+	const tampered = Buffer.from(sealed.buffer);
+	tampered[tampered.length - 5] ^= 1; // single chunk: indistinguishable from a wrong password
+
+	await decryptWithPassword(page, { name: sealed.name, buffer: tampered }, PASSWORD);
+	await decryptButton(page).click();
+	await expect(page.locator('.seal-list li[data-state="locked"]')).toBeVisible({ timeout: 15_000 });
+	await expect(page.getByText('or the file was changed after sealing')).toBeVisible();
+
+	await page.getByRole('button', { name: 'Try another password' }).click();
+	await expect(page.getByRole('heading', { name: 'Enter the password' })).toBeFocused();
+	await expect(page.getByText('1 file', { exact: true })).toBeVisible(); // the chosen file is kept
+});

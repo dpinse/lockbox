@@ -152,7 +152,7 @@
 			</div>
 		</Step>
 
-		<Step n={3} title={unsaved ? 'Save your files' : 'Encrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.some((j) => j.state === 'sealed')} onsubmit={encrypt}>
+		<Step n={3} title={unsaved ? 'Save your files' : 'Encrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.every((j) => j.state === 'sealed')} onsubmit={encrypt}>
 			{#if !jobs.length}
 				<p class="summary-line">
 					{willBundle
