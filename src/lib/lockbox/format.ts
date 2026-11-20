@@ -261,14 +261,30 @@ export function decryptStream(secret: DecryptSecret): TransformStream<Uint8Array
 	});
 }
 
-/** Bytes from the start of a Lockbox file that are enough for `sealNumber`, whatever the mode. */
-export const SEAL_BYTES_NEEDED = PREAMBLE_BYTES + Math.max(PASSWORD_PARAMS_BYTES, KEY_PARAMS_BYTES) + 4;
+const SEAL_BYTES = 10; // 80 bits: second-preimage resistant, still short enough to read aloud
 
-/** Short public code for one Lockbox file: the first 4 bytes of its random stream header, e.g. "4F2A·91C0". */
-export function sealNumber(bytes: Uint8Array): string {
-	const start = fileHeaderLength(readMode(bytes));
-	const b = bytes.subarray(start, start + 4);
-	if (b.length < 4) throw new LockboxError('incomplete');
-	const hex = Array.from(b, (x) => x.toString(16).padStart(2, '0').toUpperCase()).join('');
-	return `${hex.slice(0, 4)}·${hex.slice(4)}`;
+/** "4F2A·91C0·7B3E·D2A1·0C44": groups of 4 uppercase hex characters. */
+export function formatSeal(bytes: Uint8Array): string {
+	const hex = Array.from(bytes, (x) => x.toString(16).padStart(2, '0').toUpperCase()).join('');
+	return hex.match(/.{1,4}/g)!.join('·');
+}
+
+/**
+ * Seal number: the first 80 bits of BLAKE2b-256 over every byte of a Lockbox file. Unkeyed on purpose:
+ * compared over a separate channel, it shows the recipient holds exactly the bytes the sender made,
+ * and nobody (password holders included) can build a different file with the same number.
+ */
+export function sealHasher() {
+	const state = sodium.crypto_generichash_init(null, 32);
+	return {
+		update: (bytes: Uint8Array) => sodium.crypto_generichash_update(state, bytes),
+		digest: () => formatSeal(sodium.crypto_generichash_final(state, 32).subarray(0, SEAL_BYTES))
+	};
+}
+
+/** Seal number of a whole Lockbox file held in memory. */
+export function sealOf(file: Uint8Array): string {
+	const h = sealHasher();
+	h.update(file);
+	return h.digest();
 }

@@ -1,6 +1,6 @@
 // Runs encryption off the main thread so Argon2id and large files never freeze the page.
 import { makeZip } from 'client-zip';
-import { LockboxError, decryptStream, encryptStream, ready, sealNumber } from './format';
+import { LockboxError, decryptStream, encryptStream, ready, sealHasher } from './format';
 import type { FromWorker, Job, SinkMessage, SinkRequest, ToWorker } from './protocol';
 
 const post = (m: FromWorker) => self.postMessage(m);
@@ -30,15 +30,20 @@ async function run(job: Job) {
 				? makeZip(job.files.map((f) => ({ name: f.name, input: f, lastModified: f.lastModified, size: f.size })))
 				: job.files[0].stream();
 		const transform = job.op === 'encrypt' ? encryptStream(job.secret) : decryptStream(job.secret);
-		const reader = source.pipeThrough(counter(id)).pipeThrough(transform).getReader();
+		// The seal hashes the Lockbox file's bytes: what encrypt writes, what decrypt reads.
+		const seal = sealHasher();
+		const input = source.pipeThrough(counter(id));
+		const tapped =
+			job.op === 'decrypt'
+				? input.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({ transform: (c, ctl) => (seal.update(c), ctl.enqueue(c)) }))
+				: input;
+		const reader = tapped.pipeThrough(transform).getReader();
 
 		// Read one chunk before asking for a download, so a wrong password fails here, not as a broken download.
 		let pending: ReadableStreamReadResult<Uint8Array> | null = await reader.read();
-		// Encrypt's first chunk is the whole Lockbox header; decrypt pages read the seal from the file themselves.
-		const seal = job.op === 'encrypt' && pending.value ? sealNumber(pending.value) : '';
 		const port = await new Promise<MessagePort>((resolve) => {
 			sinks.set(id, resolve);
-			post({ type: 'ready', id, seal });
+			post({ type: 'ready', id });
 		});
 		const send = (m: SinkMessage, transfer: Transferable[] = []) => port.postMessage(m, transfer);
 
@@ -55,8 +60,9 @@ async function run(job: Job) {
 				if (result.done) {
 					send({ type: 'end' });
 					port.close();
-					post({ type: 'done', id });
+					post({ type: 'done', id, seal: seal.digest() });
 				} else {
+					if (job.op === 'encrypt') seal.update(result.value); // before the buffer is transferred away
 					send({ type: 'chunk', data: result.value }, [result.value.buffer]);
 				}
 			} catch (err) {

@@ -8,9 +8,9 @@ export type Job =
 export type ToWorker = Job | { type: 'sink'; id: number; port: MessagePort };
 
 export type FromWorker =
-	| { type: 'ready'; id: number; seal: string } // first chunk produced: secret is right, safe to start a download
+	| { type: 'ready'; id: number } // first chunk produced: secret is right, safe to start a download
 	| { type: 'progress'; id: number; bytes: number }
-	| { type: 'done'; id: number }
+	| { type: 'done'; id: number; seal: string } // seal number of the whole Lockbox file
 	| { type: 'cancelled'; id: number }
 	| { type: 'error'; id: number; code: ErrorCode | 'unknown' };
 

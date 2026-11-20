@@ -80,10 +80,10 @@
 		for (const [i, o] of outputs.entries()) {
 			jobs[i].state = 'working';
 			try {
-				const { saveUrl } = await runJob({ op: 'encrypt', files: o.files, bundle: willBundle, secret }, o.name, {
-					onProgress: (b) => (jobs[i].done = b),
-					onSeal: (s) => (jobs[i].seal = s)
+				const { saveUrl, seal } = await runJob({ op: 'encrypt', files: o.files, bundle: willBundle, secret }, o.name, {
+					onProgress: (b) => (jobs[i].done = b)
 				});
+				jobs[i].seal = seal;
 				jobs[i].state = 'sealed';
 				jobs[i].saveUrl = saveUrl;
 				jobs[i].message = saveUrl ? 'Sealed, not saved yet' : 'Saved to your downloads';
@@ -210,7 +210,7 @@
 						<Icon name="key" size={18} />
 						<span>
 							{#if mode === 'password'}Send the password separately, for example by phone.{:else}Send your public key along with the file: the recipient needs it to open it.{/if}
-							The seal number helps you both tell files apart; it isn't proof of what's inside.
+							Tell the recipient the seal number: if theirs matches, they have exactly the file you sent.
 						</span>
 					</p>
 					{#if mode === 'key' && !newKeySaved}

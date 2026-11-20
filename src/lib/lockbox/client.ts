@@ -87,24 +87,24 @@ function memorySink(): Sink {
 
 type JobInput = Job extends infer J ? (J extends Job ? Omit<J, 'type' | 'id'> : never) : never;
 
-type JobEvents = { onProgress?: (bytes: number) => void; onSeal?: (seal: string) => void };
+type JobEvents = { onProgress?: (bytes: number) => void };
 
 /**
  * Runs one job, saving the output as `filename`. Rejects with JobError.
- * Resolves with `saveUrl` when the output could not stream to disk and the user must click to save it.
+ * Resolves with the file's seal number, and `saveUrl` when the output could not stream to disk and the
+ * user must click to save it.
  */
 export function runJob(
 	input: JobInput,
 	filename: string,
-	{ onProgress, onSeal }: JobEvents = {}
-): Promise<{ saveUrl?: string }> {
+	{ onProgress }: JobEvents = {}
+): Promise<{ saveUrl?: string; seal: string }> {
 	const id = nextId++;
 	const w = getWorker();
 	let sink: Sink | null = null;
 	return new Promise((resolve, reject) => {
 		listeners.set(id, async (m) => {
 			if (m.type === 'ready') {
-				if (m.seal) onSeal?.(m.seal);
 				sink = await openSink(filename);
 				w.postMessage({ type: 'sink', id, port: sink.port }, [sink.port]);
 				sink.start(); // only after the port reaches the worker, so no pull is lost
@@ -115,7 +115,7 @@ export function runJob(
 				// 'done' can arrive before the sink's 'end', so wait for the blob before resolving.
 				const saveUrl = m.type === 'done' ? await sink?.saveUrl : undefined;
 				sink?.cleanup();
-				if (m.type === 'done') resolve({ saveUrl });
+				if (m.type === 'done') resolve({ saveUrl, seal: m.seal });
 				else reject(new JobError(m.type === 'error' ? m.code : 'unknown'));
 			}
 		});

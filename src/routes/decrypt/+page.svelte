@@ -8,14 +8,13 @@
 	import ResultActions from '#lib/components/ResultActions.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import { JobError, runJob } from '#lib/lockbox/client.ts';
-	import { LockboxError, SEAL_BYTES_NEEDED, readMode, sealNumber, type DecryptSecret, type Mode } from '#lib/lockbox/format.ts';
+	import { LockboxError, PREAMBLE_BYTES, readMode, type DecryptSecret, type Mode } from '#lib/lockbox/format.ts';
 	import { errorMessage, streaming } from '#lib/messages.ts';
 	import { focusOnMount } from '#lib/focus.ts';
 
 	let step = $state<1 | 2 | 3>(1);
 	let files = $state<File[]>([]);
 	let mode = $state<Mode | null>(null);
-	let seals = $state<string[]>([]);
 	let fileError = $state('');
 	let password = $state('');
 	let recipientPrivateText = $state('');
@@ -32,17 +31,10 @@
 		mode = null;
 		fileError = '';
 		if (!chosen.length) return;
-		Promise.all(chosen.map(async (f) => new Uint8Array(await f.slice(0, SEAL_BYTES_NEEDED).arrayBuffer())))
+		Promise.all(chosen.map(async (f) => new Uint8Array(await f.slice(0, PREAMBLE_BYTES).arrayBuffer())))
 			.then((heads) => {
 				if (chosen !== files) return;
 				const modes = heads.map(readMode);
-				seals = heads.map((h) => {
-					try {
-						return sealNumber(h);
-					} catch {
-						return '';
-					}
-				});
 				if (new Set(modes).size > 1) fileError = 'Some of these files use a password and some use keys. Decrypt them separately.';
 				else mode = modes[0];
 			})
@@ -74,13 +66,14 @@
 		retried = false;
 		partialStreamed = false;
 		running = true;
-		jobs = files.map((f, i) => ({ name: outputName(f.name), seal: seals[i] ?? '', state: 'waiting', done: 0, total: f.size }));
+		jobs = files.map((f) => ({ name: outputName(f.name), seal: '', state: 'waiting', done: 0, total: f.size }));
 		for (const [i, file] of files.entries()) {
 			jobs[i].state = 'working';
 			try {
-				const { saveUrl } = await runJob({ op: 'decrypt', files: [file], bundle: false, secret }, jobs[i].name, {
+				const { saveUrl, seal } = await runJob({ op: 'decrypt', files: [file], bundle: false, secret }, jobs[i].name, {
 					onProgress: (b) => (jobs[i].done = b)
 				});
+				jobs[i].seal = seal;
 				jobs[i].state = 'intact';
 				jobs[i].saveUrl = saveUrl;
 				jobs[i].message = saveUrl ? 'Seal intact, not saved yet' : 'Saved to your downloads';
@@ -133,7 +126,6 @@
 			{#if mode}
 				<p class="hint">
 					{mode === 'password' ? 'Encrypted with a password.' : 'Encrypted with keys.'}
-					{#if seals[0] && files.length === 1}Seal Nº <span class="mono">{seals[0]}</span>.{/if}
 				</p>
 			{/if}
 			<div class="actions">
@@ -183,7 +175,7 @@
 				</ul>
 				{#if finished}
 					{#if !unsaved && jobs.every((j) => j.state === 'intact' && j.seal)}
-						<p class="notice compare"><Icon name="check" size={18} />Every seal is intact: {mode === 'key' ? "each file was sealed with the sender's key" : 'each file was sealed with this password'} and hasn't been changed since.</p>
+						<p class="notice compare"><Icon name="check" size={18} />Every seal is intact: {mode === 'key' ? "each file was sealed with the sender's key" : 'each file was sealed with this password'} and hasn't been changed since. If the seal numbers match the sender's, these are exactly the files they sent.</p>
 					{/if}
 					{#if hasTorn || partialStreamed}
 						<p class="notice danger next">

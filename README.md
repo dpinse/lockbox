@@ -8,7 +8,7 @@ Encrypt and decrypt files in your browser with a password or a key pair. Nothing
 - **Key mode:** X25519 key exchanges from a fresh per-file key and from the Sender's private key to the Recipient's public key. Decryption only succeeds with the real Sender's public key, so it proves who sent the file, and a Sender's key leaking later doesn't expose files already sent.
 - **Tamper detection:** every chunk is authenticated and the header is bound to the first chunk. A changed, reordered or truncated file is rejected, and the app shows a broken seal.
 - **Large files:** encryption runs in a Web Worker and output streams to disk through a service worker, so multi-gigabyte files never sit in memory. Without a service worker (e.g. Firefox private windows) output is held in memory, about 1 GB at most, and saved with a click.
-- **Seal number:** a short public label from each file's header that helps sender and recipient tell files apart. It is not a fingerprint: integrity comes from decryption.
+- **Seal number:** an 80-bit BLAKE2b fingerprint of the whole encrypted file. If the sender's and recipient's numbers match, the recipient has exactly the file that was sent; nobody, password holders included, can forge a different file with the same number.
 
 The exact byte layout is in [docs/format.md](docs/format.md); design decisions are in [docs/adr/](docs/adr/).
 

@@ -138,7 +138,11 @@ A Public key is shared as `https://<host>/#to=lockbox-pub-<base64url>`. The key 
 
 ### Seal number
 
-The app labels each Lockbox file with its seal number: the first 4 bytes of the stream header as uppercase hex, split in two (`4F2A·91C0`). It is public and random per file, and helps a Sender and Recipient tell files apart. It is not bound to the contents: anyone who can decrypt a file can build a different one with the same seal number. It proves nothing about integrity; decryption does that.
+The app labels each Lockbox file with its seal number: the first 10 bytes (80 bits) of the unkeyed BLAKE2b-256 hash (`crypto_generichash`, 32-byte output, no key) of **every byte of the Lockbox file**, as uppercase hex in groups of four separated by `·` (`4F2A·91C0·7B3E·D2A1·0C44`). The encrypting app hashes the bytes it writes; the decrypting app hashes the bytes it reads.
+
+Compared over a separate channel (read aloud, sent by message), a match shows the Recipient holds exactly the bytes the Sender produced. It is unkeyed on purpose: a keyed MAC would let anyone holding the key (every holder of the password, or the Recipient in Key mode) compute a valid value for a forged file, whereas finding a different file with the same 80-bit seal needs about 2^80 work. It is not part of the format and is never stored in the file.
+
+Limits: it identifies the ciphertext, not the plaintext. Because XChaCha20-Poly1305 does not commit to its key, a malicious Sender could in principle build one file that decrypts to different contents under two different passwords or Recipient keys; both recipients would see the same seal. Preventing that needs key commitment in a future format version.
 
 ## File names
 

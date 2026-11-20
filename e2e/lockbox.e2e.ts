@@ -53,12 +53,16 @@ for (const via of ['in-memory fallback', 'service worker'] as const) {
 		expect(sealed.name).toBe('notes.txt.lockbox');
 		expect(sealed.buffer.subarray(0, 7).toString()).toBe('LOCKBOX');
 		await expect(page.locator('.seal-list li[data-state="sealed"]')).toBeVisible();
+		const sealAtEncrypt = await page.locator('.seal-list .num').innerText();
+		expect(sealAtEncrypt.replace(/\s/g, '')).toMatch(/^([0-9A-F]{4}·){4}[0-9A-F]{4}$/);
 
 		await decryptWithPassword(page, sealed, PASSWORD);
 		const opened = await download(page, () => decryptButton(page).click());
 		expect(opened.name).toBe('notes.txt');
 		expect(opened.buffer.equals(original)).toBe(true);
 		await expect(page.locator('.seal-list li[data-state="intact"]')).toBeVisible();
+		// The recipient's seal number matches the sender's: same bytes, same fingerprint.
+		expect(await page.locator('.seal-list .num').innerText()).toBe(sealAtEncrypt);
 		await context.close();
 	});
 }
