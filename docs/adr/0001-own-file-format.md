@@ -1,0 +1,3 @@
+# Own file format, no hat.sh compatibility
+
+Lockbox is a clean rewrite inspired by hat.sh and uses the same primitives (libsodium secretstream XChaCha20-Poly1305, Argon2id, X25519), but Lockbox files use their own versioned format with a `LOCKBOX` magic header and Argon2id parameters stored per file. hat.sh's format is undocumented, and matching it byte for byte would tie us to its choices forever; a versioned header lets us raise KDF costs or change chunking later without breaking old files. Consequence: lockbox cannot open hat.sh files, and the format must be documented in a spec because published files are hard to migrate.
