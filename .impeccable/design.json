@@ -697,7 +697,7 @@
   ],
   "narrative": {
     "northStar": "The Tamper-Evident Seal",
-    "overview": "lockbox is a calm sealing desk. A file goes in, a numbered seal comes out. The ground is a cool pale grey, the work happens on a single white card, and everything is near-black ink except one colour: security-tape blue, the blue of the tape that goes across a parcel to prove nobody opened it. That blue marks the step you are on, the button that moves you forward, and the seal strip laid across each finished file. Red appears only when a seal is broken or something has gone wrong.\n\nThe structure is borrowed openly from hat.sh: a centred title with a one-line promise, an Encrypt | Decrypt toggle, and a vertical three-step stepper with one step open at a time. The density is low and the copy is short. Personality lives in two places only: the treasure-box logo, whose lid closes once when a file is encrypted, and the seal strip with its white mono serial and perforated edge. The rest of the interface stays quiet so those two moments read.\n\nLight and dark themes are full peers. Both follow the system setting and can be forced with the header toggle; every colour token has a dark counterpart.",
+    "overview": "lockbox is a calm sealing desk. A file goes in, a numbered seal comes out. The ground is a cool pale grey, the work happens on a single white card, and everything is near-black ink except one colour: security-tape blue, the blue of the tape that goes across a parcel to prove nobody opened it. That blue marks the step you are on, the button that moves you forward, and the seal strip laid across each finished file. Red appears only when a seal is broken or something has gone wrong.\n\nThe structure is a guided stepper: a centred title with a one-line promise, an Encrypt | Decrypt toggle, and a vertical three-step stepper with one step open at a time. The density is low and the copy is short. Personality lives in two places only: the treasure-box logo, whose lid closes once when a file is encrypted, and the seal strip with its white mono serial and perforated edge. The rest of the interface stays quiet so those two moments read.\n\nLight and dark themes are full peers. Both follow the system setting and can be forced with the header toggle; every colour token has a dark counterpart.",
     "keyCharacteristics": [
       "One accent (tape blue), spent only on the active step, the primary action and seals.",
       "Red is a signal for broken seals, errors and irreversible loss, never decoration.",
@@ -738,7 +738,7 @@
     ],
     "donts": [
       "**Don't** use red for anything that is not broken, failed, invalid or irreversible.",
-      "**Don't** fill a whole header band, page background or large area with tape blue; the calm grey ground is part of the pinned hat.sh look.",
+      "**Don't** fill a whole header band, page background or large area with tape blue; the calm grey ground is part of the look.",
       "**Don't** put Martian Mono on labels, headings or buttons.",
       "**Don't** add shadows inside the card or raise a second surface on the page (The One Card Rule).",
       "**Don't** spread the treasure box beyond the logo and its single lid-closing animation.",

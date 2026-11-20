@@ -49,7 +49,7 @@
 
 <footer>
 	<p>Files are encrypted on this device and never uploaded.</p>
-	<p>Inspired by <a href="https://github.com/sh-dv/hat.sh">hat.sh</a> · <a href="https://github.com/dpinse/lockbox">Source on GitHub</a></p>
+	<p><a href="https://github.com/dpinse/lockbox">Source on GitHub</a></p>
 </footer>
 
 <style>

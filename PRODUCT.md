@@ -43,7 +43,6 @@ Nothing leaves the device: no upload, no account, no server processing. It is a 
 - Name: lockbox, written lowercase.
 - Logo: a treasure box. The treasure box appears only in the logo and one lid-closing animation when a file is encrypted; it is not a theme applied across the interface.
 - Voice: plain and calm. Short, direct, reassuring copy. Personality stays in the logo and the animation, not the words.
-- Visible credit to hat.sh, which inspired lockbox.
 - Light and dark themes, following the system setting, with a manual toggle.
 
 ## Evidence on Hand

@@ -2,8 +2,6 @@
 
 Encrypt and decrypt files in your browser with a password or a key pair. Nothing is uploaded: lockbox is a static site, and every byte of your file stays on your device. It works offline once loaded.
 
-Inspired by [hat.sh](https://github.com/sh-dv/hat.sh); a clean rewrite with its own file format.
-
 ## How it works
 
 - **Password mode:** Argon2id (256 MiB, 3 passes) turns the password into a key; the file is encrypted with XChaCha20-Poly1305 in 64 KiB chunks (libsodium `secretstream`).
