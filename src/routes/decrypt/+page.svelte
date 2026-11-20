@@ -54,7 +54,8 @@
 
 	const secretOk = $derived(mode === 'password' ? password.length > 0 : !!recipientPrivate && !!senderPublic);
 	const finished = $derived(jobs.length > 0 && !running);
-	const unsaved = $derived(jobs.some((j) => j.saveUrl && !j.saved));
+	const unsavedCount = $derived(jobs.filter((j) => j.saveUrl && !j.saved).length);
+	const unsaved = $derived(unsavedCount > 0);
 	const openedCount = $derived(jobs.filter((j) => j.state === 'intact').length);
 
 	const outputName = (name: string) =>
@@ -165,7 +166,7 @@
 					{/if}
 				</p>
 				<ul class="seal-list" aria-live="polite">
-					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} />{/each}
+					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} quietSave={unsavedCount > 1} />{/each}
 				</ul>
 				{#if finished}
 					{#if !unsaved && jobs.every((j) => j.state === 'intact' && j.seal)}

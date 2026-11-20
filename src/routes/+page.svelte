@@ -60,7 +60,8 @@
 	const willBundle = $derived(bundle && files.length > 1);
 	const secretOk = $derived(mode === 'password' ? password.length >= MIN_PASSWORD_LENGTH : !!senderPrivate && !!recipientPublic);
 	const finished = $derived(jobs.length > 0 && !running);
-	const unsaved = $derived(jobs.some((j) => j.saveUrl && !j.saved));
+	const unsavedCount = $derived(jobs.filter((j) => j.saveUrl && !j.saved).length);
+	const unsaved = $derived(unsavedCount > 0);
 	const sealedCount = $derived(jobs.filter((j) => j.state === 'sealed').length);
 	const filesSummary = $derived(`${files.length} ${files.length === 1 ? 'file' : 'files'}${willBundle ? ', bundled' : ''}`);
 
@@ -202,7 +203,7 @@
 					</div>
 				{/if}
 				<ul class="seal-list" aria-live="polite">
-					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} />{/each}
+					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} quietSave={unsavedCount > 1} />{/each}
 				</ul>
 				{#if finished}
 					<p class="notice">
