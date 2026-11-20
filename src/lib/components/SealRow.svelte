@@ -9,14 +9,27 @@
 		message?: string;
 		/** Set when the output is held in memory and the user must click to save it. */
 		saveUrl?: string;
+		/** The user has clicked Save at least once. */
+		saved?: boolean;
 	};
+
+	/** Saves a memory-held result. Must run inside a click handler: browsers drop downloads without one. */
+	export function saveJob(job: SealJob) {
+		if (!job.saveUrl) return;
+		const a = Object.assign(document.createElement('a'), { href: job.saveUrl, download: job.name });
+		document.body.append(a);
+		a.click();
+		a.remove();
+		job.saved = true;
+	}
 </script>
 
 <script lang="ts">
 	import Icon from './Icon.svelte';
 
-	let { job }: { job: SealJob } = $props();
+	let { job, onsave }: { job: SealJob; onsave?: () => void } = $props();
 
+	const message = $derived(job.saveUrl && job.saved ? 'Saved to your downloads' : job.message);
 	const pct = $derived(job.total ? Math.min(100, Math.round((job.done / job.total) * 100)) : 0);
 	const label = $derived(
 		{
@@ -38,11 +51,16 @@
 	</div>
 	<div class="info">
 		<span class="name">{#each job.name.split(/(?<=[.\-_])/) as part, i (i)}{part}<wbr />{/each}</span>
-		{#if job.message}<span class="msg">{job.message}</span>{/if}
+		{#if message}<span class="msg">{message}</span>{/if}
 		{#if job.seal}<span class="visually-hidden">Seal number {job.seal}.</span>{/if}
 	</div>
-	{#if job.saveUrl}
-		<a class="btn btn-primary save" href={job.saveUrl} download={job.name}><Icon name="download" size={16} />Save<span class="visually-hidden"> {job.name}</span></a>
+	{#if job.saveUrl && !job.saved}
+		<a class="btn btn-primary save" href={job.saveUrl} download={job.name} onclick={onsave}><Icon name="download" size={16} />Save<span class="visually-hidden"> {job.name}</span></a>
+	{:else if job.saveUrl}
+		<span class="status saved">
+			<Icon name="check" size={16} />Saved
+			<a class="again" href={job.saveUrl} download={job.name}>Save again<span class="visually-hidden"> {job.name}</span></a>
+		</span>
 	{:else}
 	<span class="status">
 		{#if job.state === 'sealed' || job.state === 'intact'}<Icon name="check" size={16} />{/if}
@@ -158,6 +176,18 @@
 		height: 36px;
 		margin-right: 12px;
 		font-size: 14px;
+		text-decoration: none;
+	}
+	.saved {
+		color: var(--blue-text);
+	}
+	.again {
+		margin-left: 8px;
+		font-weight: 500;
+		color: var(--ink-2);
+	}
+	.again:hover {
+		color: var(--ink);
 	}
 	.bar {
 		position: absolute;

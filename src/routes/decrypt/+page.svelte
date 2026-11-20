@@ -5,6 +5,7 @@
 	import PasswordField from '#lib/components/PasswordField.svelte';
 	import KeyField from '#lib/components/KeyField.svelte';
 	import SealRow, { type SealJob } from '#lib/components/SealRow.svelte';
+	import ResultActions from '#lib/components/ResultActions.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import { JobError, runJob } from '#lib/lockbox/client.ts';
 	import { LockboxError, SEAL_BYTES_NEEDED, readMode, sealNumber, type DecryptSecret, type Mode } from '#lib/lockbox/format.ts';
@@ -156,15 +157,13 @@
 				</div>
 			{:else}
 				<ul class="seal-list" aria-live="polite">
-					{#each jobs as job (job.name)}<SealRow {job} />{/each}
+					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} />{/each}
 				</ul>
 				{#if finished}
 					{#if jobs.every((j) => j.state === 'intact' && j.seal)}
 						<p class="notice compare"><Icon name="check" size={18} />Every seal is intact. If the seal numbers match the sender's, you have exactly the files they sent.</p>
 					{/if}
-					<div class="actions">
-						<button class="btn btn-primary" type="button" onclick={startOver}>Decrypt more files</button>
-					</div>
+					<ResultActions bind:jobs moreLabel="Decrypt more files" onrestart={startOver} />
 				{/if}
 			{/if}
 		</Step>

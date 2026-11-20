@@ -365,12 +365,12 @@ a {
 .notice.danger {
 	background: var(--red-soft);
 }
-.notice :is(svg) {
+.notice > svg {
 	flex: none;
 	margin-top: 1px;
 	color: var(--blue-text);
 }
-.notice.danger :is(svg) {
+.notice.danger > svg {
 	color: var(--red);
 }
 .check {

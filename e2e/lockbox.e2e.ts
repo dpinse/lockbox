@@ -131,3 +131,32 @@ test('key mode round trip with generated keys', async ({ page }) => {
 	const opened = await download(page, () => decryptButton(page).click());
 	expect(opened.buffer.equals(original)).toBe(true);
 });
+
+test('memory-held results are guarded until saved', async ({ browser }) => {
+	const context = await browser.newContext({ serviceWorkers: 'block' });
+	const page = await context.newPage();
+	await encryptWithPassword(page, [
+		{ name: 'a.txt', buffer: Buffer.from('a') },
+		{ name: 'b.txt', buffer: Buffer.from('b') }
+	]);
+	await encryptButton(page).click();
+	await expect(page.getByRole('button', { name: 'Save all (2)' })).toBeVisible({ timeout: 30_000 });
+
+	// Starting over with unsaved files asks first instead of discarding them.
+	await page.getByRole('button', { name: 'Encrypt more files' }).click();
+	await expect(page.getByText('2 files are not saved yet.')).toBeVisible();
+
+	// Save all downloads both and clears the warning.
+	const downloads: string[] = [];
+	page.on('download', (d) => downloads.push(d.suggestedFilename()));
+	await page.getByRole('button', { name: 'Save all' }).click();
+	await expect(page.locator('.seal-list .saved')).toHaveCount(2);
+	await expect.poll(() => downloads.sort()).toEqual(['a.txt.lockbox', 'b.txt.lockbox']);
+	await expect(page.getByText('not saved yet')).toHaveCount(0);
+
+	// Once everything is saved, starting over needs no confirmation.
+	await page.getByRole('button', { name: 'Encrypt more files' }).click();
+	await expect(page.getByRole('heading', { name: 'Choose files' })).toBeVisible();
+	await expect(page.getByLabel('Browse files')).toBeAttached();
+	await context.close();
+});

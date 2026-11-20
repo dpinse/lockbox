@@ -7,6 +7,7 @@
 	import PasswordField from '#lib/components/PasswordField.svelte';
 	import KeyField from '#lib/components/KeyField.svelte';
 	import SealRow, { type SealJob } from '#lib/components/SealRow.svelte';
+	import ResultActions from '#lib/components/ResultActions.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import { JobError, runJob } from '#lib/lockbox/client.ts';
 	import type { EncryptSecret } from '#lib/lockbox/format.ts';
@@ -148,7 +149,7 @@
 				</div>
 			{:else}
 				<ul class="seal-list" aria-live="polite">
-					{#each jobs as job (job.name)}<SealRow {job} />{/each}
+					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} />{/each}
 				</ul>
 				{#if finished}
 					<p class="notice">
@@ -158,12 +159,11 @@
 							The recipient will see the same seal number when they open the file, so you can both confirm it's the right one.
 						</span>
 					</p>
-					<div class="actions">
+					<ResultActions bind:jobs moreLabel="Encrypt more files" onrestart={startOver}>
 						{#if mode === 'password'}
 							<button class="btn" type="button" onclick={copyPassword}><Icon name={copied ? 'check' : 'copy'} size={18} />{copied ? 'Copied' : 'Copy password'}</button>
 						{/if}
-						<button class="btn btn-primary" type="button" onclick={startOver}>Encrypt more files</button>
-					</div>
+					</ResultActions>
 				{/if}
 			{/if}
 		</Step>
