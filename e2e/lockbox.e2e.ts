@@ -84,6 +84,7 @@ test('a tampered file shows a broken seal', async ({ page }) => {
 	await decryptWithPassword(page, { name: sealed.name, buffer: tampered }, PASSWORD);
 	await decryptButton(page).click();
 	await expect(page.getByText('Seal broken')).toBeVisible({ timeout: 15_000 });
+	await expect(page.getByText('Ask the sender to send it again.')).toBeVisible();
 });
 
 test('bundle produces one dated .zip.lockbox', async ({ page }) => {
@@ -130,4 +131,133 @@ test('key mode round trip with generated keys', async ({ page }) => {
 	await next(page);
 	const opened = await download(page, () => decryptButton(page).click());
 	expect(opened.buffer.equals(original)).toBe(true);
+});
+
+test('memory-held results are guarded until saved', async ({ browser }) => {
+	const context = await browser.newContext({ serviceWorkers: 'block' });
+	const page = await context.newPage();
+	await encryptWithPassword(page, [
+		{ name: 'a.txt', buffer: Buffer.from('a') },
+		{ name: 'b.txt', buffer: Buffer.from('b') }
+	]);
+	await encryptButton(page).click();
+	await expect(page.getByRole('button', { name: 'Save all (2)' })).toBeVisible({ timeout: 30_000 });
+
+	// Starting over with unsaved files asks first instead of discarding them.
+	await page.getByRole('button', { name: 'Encrypt more files' }).click();
+	await expect(page.getByText('2 files are not saved yet.')).toBeVisible();
+
+	// Save all downloads both and clears the warning.
+	const downloads: string[] = [];
+	page.on('download', (d) => downloads.push(d.suggestedFilename()));
+	await page.getByRole('button', { name: 'Save all' }).click();
+	await expect(page.locator('.seal-list').getByText('Download started')).toHaveCount(2);
+	await expect.poll(() => downloads.sort()).toEqual(['a.txt.lockbox', 'b.txt.lockbox']);
+	await expect(page.getByText('not saved yet')).toHaveCount(0);
+
+	// Once everything is saved, starting over needs no confirmation.
+	await page.getByRole('button', { name: 'Encrypt more files' }).click();
+	await expect(page.getByRole('heading', { name: 'Choose files' })).toBeVisible();
+	await expect(page.getByLabel('Browse files')).toBeAttached();
+	await context.close();
+});
+
+test('steps work from the keyboard and move focus to the opened step', async ({ page }) => {
+	await page.goto('/');
+	await choose(page, [{ name: 'notes.txt', buffer: original }]);
+	await page.getByRole('button', { name: 'Next' }).focus();
+	await page.keyboard.press('Enter');
+	await expect(page.getByRole('heading', { name: 'Choose a password or key' })).toBeFocused();
+
+	// Enter in the password field submits the step, but only once the password is long enough.
+	await passwordBox(page).fill('too short');
+	await passwordBox(page).press('Enter');
+	await expect(page.getByRole('heading', { name: 'Choose a password or key' })).toBeVisible();
+	await passwordBox(page).fill(PASSWORD);
+	await passwordBox(page).press('Enter');
+	await expect(page.getByRole('heading', { name: 'Encrypt and save' })).toBeFocused();
+
+	// The Encrypt button disappears when results replace it; focus follows to the results summary.
+	await download(page, () => encryptButton(page).click());
+	await expect(page.locator('.sealed')).toBeFocused();
+});
+
+test('a small file that will not open stays in step 3 with a retry', async ({ page }) => {
+	await encryptWithPassword(page, [{ name: 'tiny.txt', buffer: Buffer.from('a short note') }]);
+	const sealed = await download(page, () => encryptButton(page).click());
+	const tampered = Buffer.from(sealed.buffer);
+	tampered[tampered.length - 5] ^= 1; // single chunk: indistinguishable from a wrong password
+
+	await decryptWithPassword(page, { name: sealed.name, buffer: tampered }, PASSWORD);
+	await decryptButton(page).click();
+	await expect(page.locator('.seal-list li[data-state="locked"]')).toBeVisible({ timeout: 15_000 });
+	await expect(page.getByText('or the file was changed after sealing')).toBeVisible();
+
+	await page.getByRole('button', { name: 'Try another password' }).click();
+	await expect(page.getByRole('heading', { name: 'Enter the password' })).toBeFocused();
+	await expect(page.getByText("That password didn't open it.")).toBeVisible();
+	await expect(passwordBox(page)).toHaveValue('');
+	await expect(page.getByText('1 file', { exact: true })).toBeVisible(); // the chosen file is kept
+});
+
+test('an unsaved private key is not replaced without asking', async ({ page }) => {
+	await page.goto('/keys');
+	await page.getByRole('button', { name: 'Create a key pair' }).click();
+	const first = await page.locator('p.key').nth(1).innerText();
+
+	await page.getByRole('button', { name: 'Create a different key pair' }).click();
+	await expect(page.getByText("This private key isn't saved yet.")).toBeVisible();
+	await page.getByRole('button', { name: 'Keep this pair' }).click();
+	expect(await page.locator('p.key').nth(1).innerText()).toBe(first);
+
+	// Once downloaded, it is saved: no warning, and the next step is offered.
+	await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download as file' }).click()]);
+	await expect(page.getByRole('link', { name: 'Now encrypt a file' })).toBeVisible();
+	await page.getByRole('button', { name: 'Create a different key pair' }).click();
+	expect(await page.locator('p.key').nth(1).innerText()).not.toBe(first);
+});
+
+test('a share-link visitor without keys can create them inline and send', async ({ page }) => {
+	await page.goto('/keys');
+	await page.getByRole('button', { name: 'Create a key pair' }).click();
+	const bob = { pub: await page.locator('p.key').nth(0).innerText(), priv: await page.locator('p.key').nth(1).innerText() };
+
+	await page.goto(`/#to=${bob.pub}`);
+	await expect(page.getByText("You're encrypting for")).toBeVisible();
+	await choose(page, [{ name: 'secret.bin', buffer: original }]);
+	await next(page);
+	await expect(page.getByRole('textbox', { name: "Recipient's public key" })).toHaveValue(bob.pub);
+	await page.getByRole('button', { name: 'Create one here' }).click();
+	await expect(page.getByText('Your new key pair')).toBeVisible();
+	await next(page);
+	const sealed = await download(page, () => encryptButton(page).click());
+	const alicePub = await page.locator('.your-key .mono').innerText();
+	expect(alicePub).toMatch(/^lockbox-pub-/);
+
+	await page.goto('/decrypt');
+	await choose(page, [sealed]);
+	await next(page);
+	await page.getByRole('textbox', { name: 'Your private key' }).fill(bob.priv);
+	await page.getByRole('textbox', { name: "Sender's public key" }).fill(alicePub);
+	await next(page);
+	const opened = await download(page, () => decryptButton(page).click());
+	expect(opened.buffer.equals(original)).toBe(true);
+});
+
+test('focus follows a row Save and keeping an unsaved key pair', async ({ browser }) => {
+	const context = await browser.newContext({ serviceWorkers: 'block' });
+	const page = await context.newPage();
+	await encryptWithPassword(page, [{ name: 'a.txt', buffer: Buffer.from('a') }]);
+	await encryptButton(page).click();
+	const save = page.getByRole('link', { name: /^Save a\.txt/ });
+	await save.focus();
+	await Promise.all([page.waitForEvent('download'), page.keyboard.press('Enter')]);
+	await expect(page.getByRole('link', { name: /^Save again/ })).toBeFocused();
+
+	await page.goto('/keys');
+	await page.getByRole('button', { name: 'Create a key pair' }).click();
+	await page.getByRole('button', { name: 'Create a different key pair' }).click();
+	await page.getByRole('button', { name: 'Keep this pair' }).click();
+	await expect(page.getByRole('button', { name: 'Download as file' })).toBeFocused();
+	await context.close();
 });

@@ -197,7 +197,7 @@ components:
 
 lockbox is a calm sealing desk. A file goes in, a numbered seal comes out. The ground is a cool pale grey, the work happens on a single white card, and everything is near-black ink except one colour: security-tape blue, the blue of the tape that goes across a parcel to prove nobody opened it. That blue marks the step you are on, the button that moves you forward, and the seal strip laid across each finished file. Red appears only when a seal is broken or something has gone wrong.
 
-The structure is borrowed openly from hat.sh: a centred title with a one-line promise, an Encrypt | Decrypt toggle, and a vertical three-step stepper with one step open at a time. The density is low and the copy is short. Personality lives in two places only: the treasure-box logo, whose lid closes once when a file is encrypted, and the seal strip with its white mono serial and perforated edge. The rest of the interface stays quiet so those two moments read.
+The structure is a guided stepper: a centred title with a one-line promise, an Encrypt | Decrypt toggle, and a vertical three-step stepper with one step open at a time. The density is low and the copy is short. Personality lives in two places only: the treasure-box logo, whose lid closes once when a file is encrypted, and the seal strip with its white mono serial and perforated edge. The rest of the interface stays quiet so those two moments read.
 
 Light and dark themes are full peers. Both follow the system setting and can be forced with the header toggle; every colour token has a dark counterpart.
 
@@ -222,7 +222,7 @@ A cool neutral ground with one security-tape blue and one seal red, each given a
 - **Seal Red** (seal-red; dark: seal-red-dark): a torn seal strip, error text, an invalid field border, the weak segment of the password meter, and the "never share" tag. **Red Wash** (seal-red-wash) backs danger notices and that tag.
 
 ### Neutral
-- **Desk Grey** (desk-grey): the page background; the "calm grey ground" of the hat.sh look.
+- **Desk Grey** (desk-grey): the page background; the calm grey ground.
 - **Card White** (card-white) and **Field White** (field-white): the working card, and inputs, drop zones and key blocks on it. In dark, the field sits slightly darker than the card (field-dark below card-dark) so inputs read as recessed.
 - **Ink** (ink): headings, body text, file names.
 - **Ink 2** (ink-2): secondary copy: the promise line under the title, hints, step summaries, footer.
@@ -260,7 +260,7 @@ A cool neutral ground with one security-tape blue and one seal red, each given a
 
 ## Layout
 
-A single centred column. The header spans up to 1120px (logo and lowercase "lockbox" left; Keys, theme toggle and GitHub right) with 18px by 24px padding. The main column is capped at 640px with 20px side padding, so the working card is about 600px wide. Below the title sits the Encrypt | Decrypt page nav at full column width, then the card 16px under it. The footer is centred small text with the hat.sh credit.
+A single centred column. The header spans up to 1120px (logo and lowercase "lockbox" left; Keys, theme toggle and GitHub right) with 18px by 24px padding. The main column is capped at 640px with 20px side padding, so the working card is about 600px wide. Below the title sits the Encrypt | Decrypt page nav at full column width, then the card 16px under it. The footer is centred small text with the source link.
 
 Inside the card, the stepper is a two-column grid: a 28px marker column and the content, 14px apart, with 22px between steps and a 1px connector line between markers. Only the open step shows its body. Action rows sit 20px below content with 10px gaps; the primary button takes the remaining width.
 
@@ -318,7 +318,7 @@ Solid, compact and plain.
 - **Tag:** a 12px 600 pill beside a section head. "Share" in tape wash and blue text; "Never share" in red wash and red text.
 
 ### Stepper
-The hat.sh spine. Each step is a 28px numbered circle, a title and, when collapsed, a short ink 2 summary of the choice made ("2 files", "Password") with a "Change" text button. Idle markers are quiet grey; the current step and completed steps fill with tape blue, completed ones showing a check. Upcoming titles dim to ink 3 at 500.
+The spine of every task. Each step is a 28px numbered circle, a title and, when collapsed, a short ink 2 summary of the choice made ("2 files", "Password") with a "Change" text button. Idle markers are quiet grey; the current step and completed steps fill with tape blue, completed ones showing a check. Upcoming titles dim to ink 3 at 500.
 
 ### Drop Zone
 A 10px dashed box on the field background with a blue upload icon, a line of prompt copy and a small secondary "Browse" button. Dragging over turns the edge blue and the fill to tape wash. Once files are chosen it becomes a solid-bordered list: file name in ink, size in Martian Mono, hairline dividers, scrolling past 220px.
@@ -329,7 +329,7 @@ Every output file gets a row: a 156px seal strip on the left, the file name and 
 - **Waiting / working:** the strip is drawn but not applied: transparent with an inset wash outline, blue placeholder serial, grey dashed edge. A 3px tape-blue progress bar grows along the bottom of the row; status shows the percentage.
 - **Torn:** the strip turns seal red, the legend reads "BROKEN", and a jagged cut-out replaces the perforation. Status and message go red with an alert icon.
 - **Failed:** an unapplied strip in ink 3, red message and status ("Not saved").
-- **Motion:** on sealing, the strip lays across from its left edge (clip-path reveal, 520ms, ease-out `cubic-bezier(0.16, 1, 0.3, 1)`). On success the logo lid lifts and drops shut once (760ms). With reduced motion the lid does not move and the seal appears without travel.
+- **Motion:** on sealing, the strip lays across from its left edge (clip-path reveal, 520ms, ease-out `cubic-bezier(0.16, 1, 0.3, 1)`). When the files are sealed and saved, the 40px chest above the Encrypt results lifts its lid and drops it shut once (760ms); the header logo stays still. With reduced motion the lid does not move and the seal appears without travel.
 
 ## Do's and Don'ts
 
@@ -344,8 +344,8 @@ Every output file gets a row: a 156px seal strip on the left, the file name and 
 
 ### Don't:
 - **Don't** use red for anything that is not broken, failed, invalid or irreversible.
-- **Don't** fill a whole header band, page background or large area with tape blue; the calm grey ground is part of the pinned hat.sh look.
+- **Don't** fill a whole header band, page background or large area with tape blue; the calm grey ground is part of the look.
 - **Don't** put Martian Mono on labels, headings or buttons.
 - **Don't** add shadows inside the card or raise a second surface on the page (The One Card Rule).
-- **Don't** spread the treasure box beyond the logo and its single lid-closing animation.
+- **Don't** spread the treasure box beyond the header logo and the one results chest with its single lid-closing animation.
 - **Don't** reuse the seal-kind legend style (10px tracked capitals) outside the seal strip; it is the tape's printing, not a heading style.

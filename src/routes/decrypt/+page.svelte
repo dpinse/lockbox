@@ -5,10 +5,12 @@
 	import PasswordField from '#lib/components/PasswordField.svelte';
 	import KeyField from '#lib/components/KeyField.svelte';
 	import SealRow, { type SealJob } from '#lib/components/SealRow.svelte';
+	import ResultActions from '#lib/components/ResultActions.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import { JobError, runJob } from '#lib/lockbox/client.ts';
 	import { LockboxError, SEAL_BYTES_NEEDED, readMode, sealNumber, type DecryptSecret, type Mode } from '#lib/lockbox/format.ts';
-	import { errorMessage } from '#lib/messages.ts';
+	import { errorMessage, streaming } from '#lib/messages.ts';
+	import { focusOnMount } from '#lib/focus.ts';
 
 	let step = $state<1 | 2 | 3>(1);
 	let files = $state<File[]>([]);
@@ -22,7 +24,7 @@
 	let senderPublic = $state<Uint8Array | null>(null);
 	let jobs = $state<SealJob[]>([]);
 	let running = $state(false);
-	let wrongSecret = $state(false);
+	let retried = $state(false); // the last secret failed to open at least one file
 
 	// Read each file's header as soon as it is chosen: mode decides step 2, the seal number labels step 3.
 	$effect(() => {
@@ -53,6 +55,13 @@
 
 	const secretOk = $derived(mode === 'password' ? password.length > 0 : !!recipientPrivate && !!senderPublic);
 	const finished = $derived(jobs.length > 0 && !running);
+	const unsavedCount = $derived(jobs.filter((j) => j.saveUrl && !j.saved).length);
+	const unsaved = $derived(unsavedCount > 0);
+	const openedCount = $derived(jobs.filter((j) => j.state === 'intact').length);
+	const hasLocked = $derived(jobs.some((j) => j.state === 'locked'));
+	const tornCount = $derived(jobs.filter((j) => j.state === 'torn').length);
+	const hasTorn = $derived(tornCount > 0);
+	let tornStreamed = $state(false);
 
 	const outputName = (name: string) =>
 		name.toLowerCase().endsWith('.lockbox') && name.length > 8 ? name.slice(0, -8) : `${name}.decrypted`;
@@ -61,8 +70,9 @@
 		if (!mode || !secretOk || running) return;
 		const secret: DecryptSecret =
 			mode === 'password' ? { password } : { recipientPrivate: recipientPrivate!, senderPublic: senderPublic! };
+		const streamed = streaming();
+		retried = false;
 		running = true;
-		wrongSecret = false;
 		jobs = files.map((f, i) => ({ name: outputName(f.name), seal: seals[i] ?? '', state: 'waiting', done: 0, total: f.size }));
 		for (const [i, file] of files.entries()) {
 			jobs[i].state = 'working';
@@ -72,21 +82,24 @@
 				});
 				jobs[i].state = 'intact';
 				jobs[i].saveUrl = saveUrl;
-				jobs[i].message = saveUrl ? 'Ready. Click Save to keep it.' : 'Saved to your downloads';
+				jobs[i].message = saveUrl ? 'Seal intact, not saved yet' : 'Saved to your downloads';
 			} catch (err) {
 				const code = err instanceof JobError ? err.code : 'unknown';
-				if (code === 'wrong-secret') {
-					// Same secret for every file: stop instead of failing each one.
-					wrongSecret = true;
-					jobs = [];
-					break;
-				}
-				jobs[i].state = code === 'altered' || code === 'incomplete' ? 'torn' : 'failed';
-				jobs[i].message = errorMessage[code];
+				// A first chunk that won't open can't tell a wrong secret from tampering, so say both.
+				jobs[i].state = code === 'wrong-secret' ? 'locked' : code === 'altered' || code === 'incomplete' ? 'torn' : 'failed';
+				jobs[i].message = errorMessage[code]; // what to do next is in the note under the list
+				if (code === 'altered' || code === 'incomplete') tornStreamed = streamed;
 			}
 		}
 		running = false;
-		if (wrongSecret) step = 2;
+	}
+
+	function retry() {
+		for (const j of jobs) if (j.saveUrl) URL.revokeObjectURL(j.saveUrl);
+		jobs = [];
+		password = '';
+		retried = true;
+		step = 2;
 	}
 
 	function startOver() {
@@ -113,7 +126,7 @@
 
 <section class="card after-nav" aria-label="Decrypt files">
 	<ol class="steps">
-		<Step n={1} title="Choose lockbox files" state={stateOf(1)} summary="{files.length} {files.length === 1 ? 'file' : 'files'}" onedit={editable(1)}>
+		<Step n={1} title="Choose lockbox files" state={stateOf(1)} summary="{files.length} {files.length === 1 ? 'file' : 'files'}" onedit={editable(1)} onsubmit={() => mode && (step = 2)}>
 			<DropZone bind:files accept=".lockbox" label="Drag .lockbox files here, or" />
 			{#if fileError}<p class="error" role="alert">{fileError}</p>{/if}
 			{#if mode}
@@ -123,13 +136,13 @@
 				</p>
 			{/if}
 			<div class="actions">
-				<button class="btn btn-primary" type="button" disabled={!mode} onclick={() => (step = 2)}>Next</button>
+				<button class="btn btn-primary" type="submit" disabled={!mode}>Next</button>
 			</div>
 		</Step>
 
-		<Step n={2} title={secretTitle} state={stateOf(2)} summary={mode === 'key' ? 'Keys' : 'Password'} onedit={editable(2)}>
-			{#if wrongSecret}
-				<p class="notice danger" role="alert"><Icon name="alert" size={18} />{errorMessage['wrong-secret']} Nothing was saved.</p>
+		<Step n={2} title={secretTitle} state={stateOf(2)} summary={mode === 'key' ? 'Keys' : 'Password'} onedit={editable(2)} onsubmit={() => secretOk && (step = 3)}>
+			{#if retried}
+				<p class="notice danger" role="alert"><Icon name="alert" size={18} />{mode === 'key' ? "Those keys didn't open it." : "That password didn't open it."} Check it, or ask the sender which one they used.</p>
 			{/if}
 			<div class="secret">
 				{#if mode === 'password'}
@@ -141,30 +154,48 @@
 			</div>
 			<div class="actions">
 				<button class="btn" type="button" onclick={() => (step = 1)}>Back</button>
-				<button class="btn btn-primary" type="button" disabled={!secretOk} onclick={() => ((wrongSecret = false), (step = 3))}>Next</button>
+				<button class="btn btn-primary" type="submit" disabled={!secretOk}>Next</button>
 			</div>
 		</Step>
 
-		<Step n={3} title="Decrypt and save" state={stateOf(3)} complete={finished && jobs.some((j) => j.state === 'intact')}>
+		<Step n={3} title={unsaved ? 'Save your files' : 'Decrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.every((j) => j.state === 'intact')} onsubmit={decrypt}>
 			{#if !jobs.length}
 				<p class="summary-line">Each file is checked as it is decrypted. If anything was changed, decryption stops.</p>
 				<div class="actions">
 					<button class="btn" type="button" onclick={() => (step = 2)}>Back</button>
-					<button class="btn btn-primary" type="button" onclick={decrypt} disabled={running}>
-						<Icon name="download" size={18} />{running ? 'Checking…' : `Decrypt ${files.length === 1 ? 'file' : `${files.length} files`}`}
+					<button class="btn btn-primary" type="submit" disabled={running}>
+						<Icon name="download" size={18} />Decrypt {files.length === 1 ? 'file' : `${files.length} files`}
 					</button>
 				</div>
 			{:else}
+				<p class="checked landing" tabindex="-1" use:focusOnMount>
+					{#if running}
+						<strong>Checking each file…</strong>
+					{:else if openedCount === jobs.length}
+						<strong>{jobs.length === 1 ? 'Seal intact' : 'All seals intact'}</strong>
+					{:else}
+						<strong>{openedCount} of {jobs.length} {jobs.length === 1 ? 'file' : 'files'} opened</strong>
+					{/if}
+				</p>
 				<ul class="seal-list" aria-live="polite">
-					{#each jobs as job (job.name)}<SealRow {job} />{/each}
+					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} quietSave={unsavedCount > 1} />{/each}
 				</ul>
 				{#if finished}
-					{#if jobs.every((j) => j.state === 'intact' && j.seal)}
+					{#if !unsaved && jobs.every((j) => j.state === 'intact' && j.seal)}
 						<p class="notice compare"><Icon name="check" size={18} />Every seal is intact. If the seal numbers match the sender's, you have exactly the files they sent.</p>
 					{/if}
-					<div class="actions">
-						<button class="btn btn-primary" type="button" onclick={startOver}>Decrypt more files</button>
-					</div>
+					{#if hasTorn}
+						<p class="notice danger next">
+							<Icon name="alert" size={18} />
+							{#if tornStreamed}If part of a broken file was saved, delete it: it is incomplete.{:else}{tornCount === 1 ? "The broken file wasn't saved." : "The broken files weren't saved."}{/if}
+							Ask the sender to send {tornCount === 1 ? 'it' : 'them'} again.
+						</p>
+					{/if}
+					<ResultActions bind:jobs moreLabel="Decrypt more files" onrestart={startOver} quietMore={hasLocked}>
+						{#if hasLocked}
+							<button class={unsaved ? 'btn' : 'btn btn-primary'} type="button" onclick={retry}>{mode === 'key' ? 'Try other keys' : 'Try another password'}</button>
+						{/if}
+					</ResultActions>
 				{/if}
 			{/if}
 		</Step>
@@ -178,10 +209,20 @@
 	.notice {
 		margin-bottom: 16px;
 	}
+	.notice.next {
+		margin: 16px 0 0;
+	}
 	.notice.compare {
 		margin: 16px 0 0;
 	}
 	.summary-line {
 		color: var(--ink-2);
+	}
+	.checked {
+		margin-bottom: 12px;
+		border-radius: 5px;
+	}
+	.checked strong {
+		font-weight: 600;
 	}
 </style>

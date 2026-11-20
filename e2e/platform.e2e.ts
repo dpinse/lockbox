@@ -13,7 +13,7 @@ test('pages load with no CSP violations', async ({ page }) => {
 		await expect(page.locator('main h1')).toBeVisible();
 	}
 	await page.getByRole('button', { name: 'Create a key pair' }).click();
-	await page.getByRole('button', { name: 'QR code' }).click();
+	await page.getByRole('button', { name: 'More ways to share' }).click();
 	await expect(page.locator('.qr svg')).toBeVisible();
 	expect(violations).toEqual([]);
 });

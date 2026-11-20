@@ -1,5 +1,6 @@
 <script lang="ts" module>
-	export type SealState = 'waiting' | 'working' | 'sealed' | 'intact' | 'torn' | 'failed';
+	// locked: the first chunk would not open, so a wrong password or key and tampering look the same.
+	export type SealState = 'waiting' | 'working' | 'sealed' | 'intact' | 'torn' | 'locked' | 'failed';
 	export type SealJob = {
 		name: string;
 		seal: string;
@@ -9,14 +10,29 @@
 		message?: string;
 		/** Set when the output is held in memory and the user must click to save it. */
 		saveUrl?: string;
+		/** The user has clicked Save at least once. */
+		saved?: boolean;
 	};
+
+	/** Saves a memory-held result. Must run inside a click handler: browsers drop downloads without one. */
+	export function saveJob(job: SealJob) {
+		if (!job.saveUrl) return;
+		const a = Object.assign(document.createElement('a'), { href: job.saveUrl, download: job.name });
+		document.body.append(a);
+		a.click();
+		a.remove();
+		job.saved = true;
+	}
 </script>
 
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { focusOnMount } from '#lib/focus.ts';
 
-	let { job }: { job: SealJob } = $props();
+	// quietSave: another control ("Save all") is the step's primary action, so this row's Save steps back.
+	let { job, onsave, quietSave = false }: { job: SealJob; onsave?: () => void; quietSave?: boolean } = $props();
 
+	const message = $derived(job.saveUrl && job.saved ? 'Download started' : job.message);
 	const pct = $derived(job.total ? Math.min(100, Math.round((job.done / job.total) * 100)) : 0);
 	const label = $derived(
 		{
@@ -25,6 +41,7 @@
 			sealed: 'Sealed',
 			intact: 'Seal intact',
 			torn: 'Seal broken',
+			locked: "Couldn't open",
 			failed: 'Not saved'
 		}[job.state]
 	);
@@ -38,18 +55,25 @@
 	</div>
 	<div class="info">
 		<span class="name">{#each job.name.split(/(?<=[.\-_])/) as part, i (i)}{part}<wbr />{/each}</span>
-		{#if job.message}<span class="msg">{job.message}</span>{/if}
+		{#if message}
+			<span class="msg">
+				{message}{#if job.saveUrl && job.saved}{' · '}<a class="again" use:focusOnMount href={job.saveUrl} download={job.name}>Save again<span class="visually-hidden"> {job.name}</span></a>{/if}
+			</span>
+		{/if}
 		{#if job.seal}<span class="visually-hidden">Seal number {job.seal}.</span>{/if}
 	</div>
-	{#if job.saveUrl}
-		<a class="btn btn-primary save" href={job.saveUrl} download={job.name}><Icon name="download" size={16} />Save<span class="visually-hidden"> {job.name}</span></a>
-	{:else}
-	<span class="status">
-		{#if job.state === 'sealed' || job.state === 'intact'}<Icon name="check" size={16} />{/if}
-		{#if job.state === 'torn' || job.state === 'failed'}<Icon name="alert" size={16} />{/if}
-		{label}
-	</span>
-	{/if}
+	<div class="end">
+		{#if !(job.saveUrl && !job.saved)}
+		<span class="status">
+			{#if job.state === 'sealed' || job.state === 'intact'}<Icon name="check" size={16} />{/if}
+			{#if job.state === 'torn' || job.state === 'locked' || job.state === 'failed'}<Icon name="alert" size={16} />{/if}
+			{label}
+		</span>
+		{/if}
+		{#if job.saveUrl && !job.saved}
+			<a class="btn save" class:btn-primary={!quietSave} href={job.saveUrl} download={job.name} onclick={onsave}><Icon name="download" size={16} />Save<span class="visually-hidden"> {job.name}</span></a>
+		{/if}
+	</div>
 	{#if job.state === 'working'}<span class="bar" style:width="{pct}%"></span>{/if}
 </li>
 
@@ -91,6 +115,7 @@
 	/* Working or waiting: the seal is drawn but not yet applied. */
 	[data-state='waiting'] .seal,
 	[data-state='working'] .seal,
+	[data-state='locked'] .seal,
 	[data-state='failed'] .seal {
 		background: transparent;
 		color: var(--blue-text);
@@ -98,12 +123,13 @@
 		box-shadow: inset 0 0 0 1.5px var(--blue-soft);
 		animation: none;
 	}
-	[data-state='failed'] .seal {
+	[data-state='failed'] .seal,
+	[data-state='locked'] .seal {
 		color: var(--ink-3);
 	}
 	[data-state='torn'] .seal {
-		background: var(--red);
-		color: var(--card);
+		background: var(--seal-broken);
+		color: var(--on-blue);
 		border-right-color: transparent;
 		animation: none;
 	}
@@ -132,6 +158,7 @@
 		color: var(--ink-2);
 	}
 	[data-state='torn'] .msg,
+	[data-state='locked'] .msg,
 	[data-state='failed'] .msg {
 		color: var(--red);
 	}
@@ -151,6 +178,7 @@
 		color: var(--blue-text);
 	}
 	[data-state='torn'] .status,
+	[data-state='locked'] .status,
 	[data-state='failed'] .status {
 		color: var(--red);
 	}
@@ -158,6 +186,27 @@
 		height: 36px;
 		margin-right: 12px;
 		font-size: 14px;
+		text-decoration: none;
+	}
+	.end {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding-right: 12px;
+	}
+	.end .status {
+		padding-right: 4px;
+	}
+	.end .save {
+		margin-right: 0;
+	}
+	.again {
+		white-space: nowrap;
+		font-weight: 500;
+		color: var(--ink-2);
+	}
+	.again:hover {
+		color: var(--ink);
 	}
 	.bar {
 		position: absolute;
@@ -192,6 +241,7 @@
 		}
 		[data-state='waiting'] .seal,
 		[data-state='working'] .seal,
+		[data-state='locked'] .seal,
 		[data-state='failed'] .seal {
 			border-right: 0;
 			border-bottom: 2px dashed var(--line-strong);
@@ -205,11 +255,12 @@
 		.name {
 			white-space: normal;
 		}
-		.status {
+		.end {
+			justify-content: space-between;
 			padding: 0 16px 12px;
 		}
-		.save {
-			margin: 0 16px 12px;
+		.end .status {
+			padding: 0;
 		}
 	}
 </style>

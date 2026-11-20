@@ -1,13 +1,15 @@
 <script lang="ts">
-	import { sealPulse } from '#lib/seal.svelte.ts';
 
-	let { size = 30 }: { size?: number } = $props();
+	// Each change of `pulse` closes the lid once. Without it (the header logo) the chest stays still.
+	let { size = 30, pulse }: { size?: number; pulse?: number } = $props();
 
+	const trigger = $derived(pulse);
 	let playing = $state(false);
-	let seen = sealPulse.count;
+	let seen: number | undefined;
 	$effect(() => {
-		if (sealPulse.count === seen) return;
-		seen = sealPulse.count;
+		const t = trigger;
+		if (seen === undefined || t === seen) return void (seen = t);
+		seen = t;
 		playing = false;
 		requestAnimationFrame(() => (playing = true));
 	});

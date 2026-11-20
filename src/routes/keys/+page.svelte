@@ -1,12 +1,38 @@
 <script lang="ts">
 	import QRCode from 'qrcode';
+	import { tick } from 'svelte';
+	import { focusOnMount } from '#lib/focus.ts';
+	import { downloadText } from '#lib/download.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import { encodeKey, generateKeyPair, shareLink } from '#lib/lockbox/keys.ts';
 
 	let pair = $state<{ publicText: string; privateText: string; link: string; qr: string } | null>(null);
 	let copied = $state('');
-	let showQr = $state(false);
+	let moreShare = $state(false);
 	let savedPrivate = $state(false);
+	let savedBy = $state<'download' | 'copy' | null>(null);
+	let confirmingNew = $state(false);
+	let publicHeading = $state<HTMLHeadingElement>();
+	let downloadButton = $state<HTMLButtonElement>();
+
+	// An unsaved private key exists only on this page; warn before it is lost.
+	$effect(() => {
+		if (!pair || savedPrivate) return;
+		const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+		addEventListener('beforeunload', warn);
+		return () => removeEventListener('beforeunload', warn);
+	});
+
+	async function keepPair() {
+		confirmingNew = false;
+		await tick();
+		downloadButton?.focus(); // the confirm is gone; saving the key is the next thing to do
+	}
+
+	function requestNew() {
+		if (savedPrivate) generate();
+		else confirmingNew = true;
+	}
 
 	async function generate() {
 		const { publicKey, privateKey } = generateKeyPair();
@@ -17,22 +43,26 @@
 			link,
 			qr: await QRCode.toString(link, { type: 'svg', margin: 1, color: { dark: '#15181d', light: '#ffffff' } })
 		};
-		showQr = false;
+		moreShare = false;
 		savedPrivate = false;
+		savedBy = null;
+		confirmingNew = false;
+		await tick();
+		publicHeading?.focus(); // the button that was focused is gone or replaced
 	}
 
 	async function copy(what: string, text: string) {
 		await navigator.clipboard.writeText(text);
+		if (what === 'private') ((savedPrivate = true), (savedBy ??= 'copy'));
 		copied = what;
 		setTimeout(() => (copied = ''), 1600);
 	}
 
 	function downloadPrivate() {
 		if (!pair) return;
-		const url = URL.createObjectURL(new Blob([pair.privateText + '\n'], { type: 'text/plain' }));
-		Object.assign(document.createElement('a'), { href: url, download: 'lockbox-private-key.txt' }).click();
-		setTimeout(() => URL.revokeObjectURL(url), 10_000);
+		downloadText('lockbox-private-key.txt', pair.privateText + '\n');
 		savedPrivate = true;
+		savedBy = 'download';
 	}
 </script>
 
@@ -52,22 +82,26 @@
 	{:else}
 		<div class="half">
 			<div class="half-head">
-				<h2>Public key</h2>
+				<h2 bind:this={publicHeading} tabindex="-1">Public key</h2>
 				<span class="tag share">Share freely</span>
 			</div>
 			<p class="hint">People need it to send you files, and to check files you send them.</p>
 			<p class="key mono">{pair.publicText}</p>
 			<div class="row">
-				<button class="btn" type="button" onclick={() => copy('public', pair!.publicText)}><Icon name={copied === 'public' ? 'check' : 'copy'} size={18} />{copied === 'public' ? 'Copied' : 'Copy key'}</button>
-				<button class="btn" type="button" onclick={() => copy('link', pair!.link)}><Icon name={copied === 'link' ? 'check' : 'copy'} size={18} />{copied === 'link' ? 'Copied' : 'Copy share link'}</button>
-				<button class="btn" type="button" aria-expanded={showQr} onclick={() => (showQr = !showQr)}><Icon name="qr" size={18} />QR code</button>
+				<button class="btn" type="button" onclick={() => copy('public', pair!.publicText)}><Icon name={copied === 'public' ? 'check' : 'copy'} size={18} />{copied === 'public' ? 'Copied' : 'Copy public key'}</button>
+				<button class="btn" type="button" aria-expanded={moreShare} aria-controls="more-share" onclick={() => (moreShare = !moreShare)}><Icon name="qr" size={18} />More ways to share</button>
 			</div>
-			{#if showQr}
-				<figure class="qr">
-					<!-- QR SVG is generated locally from our own link text. -->
-					{@html pair.qr}
-					<figcaption>Scan to open lockbox with your public key filled in.</figcaption>
-				</figure>
+			{#if moreShare}
+				<div class="more" id="more-share">
+					<figure class="qr">
+						<!-- QR SVG is generated locally from our own link text. -->
+						{@html pair.qr}
+					</figure>
+					<div>
+						<p class="hint">A link or QR code opens lockbox with your public key already filled in, ready to encrypt a file for you.</p>
+						<button class="btn" type="button" onclick={() => copy('link', pair!.link)}><Icon name={copied === 'link' ? 'check' : 'copy'} size={18} />{copied === 'link' ? 'Copied' : 'Copy share link'}</button>
+					</div>
+				</div>
 			{/if}
 		</div>
 
@@ -76,15 +110,32 @@
 				<h2>Private key</h2>
 				<span class="tag never">Never share</span>
 			</div>
-			<p class="notice danger"><Icon name="alert" size={18} />Save it now. If you lose it, files sent to you can't be opened, and lockbox can't recover it.</p>
+			{#if savedPrivate}
+				<p class="notice"><Icon name="check" size={18} /><span>{savedBy === 'copy' ? 'Copied. Paste it somewhere lasting, like a password manager: the clipboard is temporary.' : 'Downloaded. Keep the file somewhere safe: you need it to open files sent to you.'} <a href="/">Now encrypt a file</a></span></p>
+			{:else}
+				<p class="notice danger"><Icon name="alert" size={18} />Save it now. If you lose it, files sent to you can't be opened, and lockbox can't recover it.</p>
+			{/if}
 			<p class="key mono">{pair.privateText}</p>
 			<div class="row">
-				<button class="btn btn-primary" type="button" onclick={downloadPrivate}><Icon name={savedPrivate ? 'check' : 'download'} size={18} />{savedPrivate ? 'Downloaded' : 'Download as file'}</button>
-				<button class="btn" type="button" onclick={() => copy('private', pair!.privateText)}><Icon name={copied === 'private' ? 'check' : 'copy'} size={18} />{copied === 'private' ? 'Copied' : 'Copy'}</button>
+				<button class="btn btn-primary" type="button" onclick={downloadPrivate} bind:this={downloadButton}><Icon name={savedPrivate ? 'check' : 'download'} size={18} />{savedPrivate ? 'Downloaded' : 'Download as file'}</button>
+				<button class="btn" type="button" onclick={() => copy('private', pair!.privateText)}><Icon name={copied === 'private' ? 'check' : 'copy'} size={18} />{copied === 'private' ? 'Copied' : 'Copy private key'}</button>
 			</div>
 		</div>
 
-		<p class="again"><button class="btn-link" type="button" onclick={generate}>Create a different key pair</button></p>
+		{#if confirmingNew}
+			<div class="notice danger replace" role="alert">
+				<Icon name="alert" size={18} />
+				<div>
+					<p><strong>This private key isn't saved yet.</strong> A new pair replaces it for good.</p>
+					<div class="row">
+						<button class="btn" type="button" onclick={generate}>Replace it</button>
+						<button class="btn btn-primary" type="button" onclick={keepPair} use:focusOnMount>Keep this pair</button>
+					</div>
+				</div>
+			</div>
+		{:else}
+			<p class="again"><button class="btn-link" type="button" onclick={requestNew}>Create a different key pair</button></p>
+		{/if}
 	{/if}
 </section>
 
@@ -147,17 +198,36 @@
 		gap: 8px;
 		margin-top: 12px;
 	}
+	.more {
+		display: flex;
+		align-items: flex-start;
+		gap: 20px;
+		margin-top: 16px;
+	}
+	.more .hint {
+		margin: 0 0 12px;
+	}
 	.qr {
-		margin: 16px 0 0;
-		display: grid;
-		justify-items: start;
-		gap: 8px;
-		font-size: 14px;
-		color: var(--ink-2);
+		margin: 0;
+		flex: none;
+	}
+	.replace {
+		margin-top: 24px;
+	}
+	.replace p {
+		margin: 0;
+	}
+	.replace strong {
+		font-weight: 600;
+	}
+	@media (max-width: 520px) {
+		.more {
+			flex-direction: column;
+		}
 	}
 	.qr :global(svg) {
-		width: 200px;
-		height: 200px;
+		width: 160px;
+		height: 160px;
 		border-radius: var(--radius-sm);
 		border: 1px solid var(--line);
 	}

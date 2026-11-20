@@ -9,13 +9,13 @@ related_targets: ["src/routes/decrypt/+page.svelte","src/routes/keys/+page.svelt
 
 Mode: Operate. Audience and job: see PRODUCT.md (a stranger protecting a real file; resume reviewers second).
 
-Chosen direction: Tamper-Evident Seal, fused with the user's pinned structure: "I liked the hat.sh look a lot." Field by field, the pin wins on layout and calm grey ground; the seal world supplies palette accent, type and the signature move. The roll's "tape blue owns the whole shell band" raise is translated to blue owning the active stepper and seals, because a full blue band contradicts the pinned look.
+Chosen direction: Tamper-Evident Seal, fused with the user's pinned structure: a centred title, an Encrypt | Decrypt toggle, and a vertical three-step stepper. Field by field, the pin wins on layout and calm grey ground; the seal world supplies palette accent, type and the signature move. The roll's "tape blue owns the whole shell band" raise is translated to blue owning the active stepper and seals, because a full blue band contradicts the pinned look.
 
 Memorable moment: the logo lid closes and a numbered seal strip lays across the finished file.
 
 ## Direction contract
 
-THESIS: lockbox is a guided, three-step sealing desk: a file goes in, a numbered seal comes out. It refuses the dashboard-style form with everything visible at once; one step is open at a time, as in hat.sh's stepper.
+THESIS: lockbox is a guided, three-step sealing desk: a file goes in, a numbered seal comes out. It refuses the dashboard-style form with everything visible at once; one step is open at a time.
 
 OWN-WORLD: Cool pale grey ground, white working card, near-black ink, one security-tape blue for active step, primary action and seals; seal red only for torn/altered. Archivo for UI, Martian Mono for seal numbers, keys and file sizes. Seal strips: blue tape with white mono serial and a perforated dashed edge.
 

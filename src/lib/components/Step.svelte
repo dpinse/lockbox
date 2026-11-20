@@ -9,6 +9,7 @@
 		summary = '',
 		complete = false,
 		onedit,
+		onsubmit,
 		children
 	}: {
 		n: number;
@@ -18,8 +19,19 @@
 		/** Show the check while the step stays open, e.g. the final step after success. */
 		complete?: boolean;
 		onedit?: () => void;
+		/** Makes the step body a form, so Enter in a field runs the step's primary action. */
+		onsubmit?: () => void;
 		children?: Snippet;
 	} = $props();
+
+	// Move focus into a step when it opens (not on first page load), so keyboard and screen-reader
+	// users continue from where the change happened instead of the top of the page.
+	let heading: HTMLHeadingElement;
+	let prev: string | undefined;
+	$effect(() => {
+		if (prev !== undefined && state === 'current' && prev !== 'current') heading.focus();
+		prev = state;
+	});
 </script>
 
 <li class="step" data-state={state} aria-current={state === 'current' ? 'step' : undefined}>
@@ -27,14 +39,27 @@
 		{#if state === 'done' || complete}<Icon name="check" size={16} />{:else}{n}{/if}
 	</span>
 	<div class="head">
-		<h2>{title}</h2>
+		<h2 bind:this={heading} tabindex="-1">{title}</h2>
 		{#if state === 'done'}
 			{#if summary}<span class="summary">{summary}</span>{/if}
 			{#if onedit}<button type="button" class="btn-link" onclick={onedit}>Change<span class="visually-hidden"> {title.toLowerCase()}</span></button>{/if}
 		{/if}
 	</div>
 	{#if state === 'current' && children}
-		<div class="body">{@render children()}</div>
+		{#if onsubmit}
+			<form
+				class="body"
+				novalidate
+				onsubmit={(e) => {
+					e.preventDefault();
+					onsubmit();
+				}}
+			>
+				{@render children()}
+			</form>
+		{:else}
+			<div class="body">{@render children()}</div>
+		{/if}
 	{/if}
 </li>
 
@@ -82,7 +107,17 @@
 		padding-top: 3px;
 		flex-wrap: wrap;
 	}
+	h2:focus:not(:focus-visible) {
+		box-shadow: none;
+	}
+	/* A lighter ring than controls get: the heading is a landing point, not something to press. */
+	h2:focus-visible {
+		box-shadow: none;
+		outline: 2px solid var(--blue);
+		outline-offset: 3px;
+	}
 	h2 {
+		border-radius: 5px;
 		font-size: 16px;
 		font-weight: 600;
 		line-height: 1.4;

@@ -46,7 +46,7 @@
 			{id}
 			class="mono-input"
 			bind:value
-			rows="2"
+			rows="3"
 			spellcheck="false"
 			autocomplete="off"
 			placeholder={kind === 'public' ? 'lockbox-pub-…' : 'lockbox-priv-…'}
@@ -74,6 +74,9 @@
 	}
 	.field {
 		align-items: flex-start;
+	}
+	textarea {
+		word-break: break-all;
 	}
 	.field-actions {
 		padding-top: 6px;
