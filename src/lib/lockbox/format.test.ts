@@ -201,6 +201,14 @@ describe('key mode', () => {
 		);
 	});
 
+	it('refuses to encrypt to an all-zero recipient public key', async () => {
+		const sender = generateKeyPair();
+		await expectCode(
+			encrypt({ senderPrivate: sender.privateKey, recipientPublic: new Uint8Array(32) }, bytes(10)),
+			'wrong-secret'
+		);
+	});
+
 	it('rejects a password for a key file', async () => {
 		const [sender, recipient] = [generateKeyPair(), generateKeyPair()];
 		const sealed = await encrypt({ senderPrivate: sender.privateKey, recipientPublic: recipient.publicKey }, bytes(10));

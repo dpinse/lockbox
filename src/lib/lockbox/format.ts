@@ -95,12 +95,16 @@ function encryptKey(secret: EncryptSecret): { fileHeader: Uint8Array; key: Uint8
 	fileHeader[7] = VERSION;
 	fileHeader[8] = MODE_KEY;
 	const senderPublic = sodium.crypto_scalarmult_base(secret.senderPrivate);
-	const { sharedTx } = sodium.crypto_kx_client_session_keys(
-		senderPublic,
-		secret.senderPrivate,
-		secret.recipientPublic
-	);
-	return { fileHeader, key: sharedTx };
+	try {
+		const { sharedTx } = sodium.crypto_kx_client_session_keys(
+			senderPublic,
+			secret.senderPrivate,
+			secret.recipientPublic
+		);
+		return { fileHeader, key: sharedTx };
+	} catch {
+		throw new LockboxError('wrong-secret'); // e.g. an all-zero or low-order public key
+	}
 }
 
 function decryptKey(fileHeader: Uint8Array, secret: DecryptSecret): Uint8Array {
