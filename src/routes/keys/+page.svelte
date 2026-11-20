@@ -1,5 +1,7 @@
 <script lang="ts">
 	import QRCode from 'qrcode';
+	import { tick } from 'svelte';
+	import { focusOnMount } from '#lib/focus.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import { encodeKey, generateKeyPair, shareLink } from '#lib/lockbox/keys.ts';
 
@@ -8,6 +10,7 @@
 	let moreShare = $state(false);
 	let savedPrivate = $state(false);
 	let confirmingNew = $state(false);
+	let publicHeading = $state<HTMLHeadingElement>();
 
 	// An unsaved private key exists only on this page; warn before it is lost.
 	$effect(() => {
@@ -34,6 +37,8 @@
 		moreShare = false;
 		savedPrivate = false;
 		confirmingNew = false;
+		await tick();
+		publicHeading?.focus(); // the button that was focused is gone or replaced
 	}
 
 	async function copy(what: string, text: string) {
@@ -68,7 +73,7 @@
 	{:else}
 		<div class="half">
 			<div class="half-head">
-				<h2>Public key</h2>
+				<h2 bind:this={publicHeading} tabindex="-1">Public key</h2>
 				<span class="tag share">Share freely</span>
 			</div>
 			<p class="hint">People need it to send you files, and to check files you send them.</p>
@@ -115,7 +120,7 @@
 					<p><strong>This private key isn't saved yet.</strong> A new pair replaces it for good.</p>
 					<div class="row">
 						<button class="btn" type="button" onclick={generate}>Replace it</button>
-						<button class="btn btn-primary" type="button" onclick={() => (confirmingNew = false)}>Keep this pair</button>
+						<button class="btn btn-primary" type="button" onclick={() => (confirmingNew = false)} use:focusOnMount>Keep this pair</button>
 					</div>
 				</div>
 			</div>

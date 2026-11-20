@@ -16,6 +16,7 @@
 	import { MIN_PASSWORD_LENGTH } from '#lib/password.ts';
 	import { failureMessage, streaming, today } from '#lib/messages.ts';
 	import { sealPulse } from '#lib/seal.svelte.ts';
+	import { focusOnMount } from '#lib/focus.ts';
 
 	let step = $state<1 | 2 | 3>(1);
 	let files = $state<File[]>([]);
@@ -168,7 +169,7 @@
 				</div>
 			{:else}
 				{#if running || sealedCount}
-					<div class="sealed">
+					<div class="sealed" tabindex="-1" use:focusOnMount>
 						<Logo size={40} pulse={cardPulse} />
 						<p>
 							{#if running}

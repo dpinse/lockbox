@@ -175,6 +175,10 @@ test('steps work from the keyboard and move focus to the opened step', async ({ 
 	await passwordBox(page).fill(PASSWORD);
 	await passwordBox(page).press('Enter');
 	await expect(page.getByRole('heading', { name: 'Encrypt and save' })).toBeFocused();
+
+	// The Encrypt button disappears when results replace it; focus follows to the results summary.
+	await download(page, () => encryptButton(page).click());
+	await expect(page.locator('.sealed')).toBeFocused();
 });
 
 test('a small file that will not open stays in step 3 with a retry', async ({ page }) => {

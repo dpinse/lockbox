@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Icon from './Icon.svelte';
+	import { focusOnMount } from '#lib/focus.ts';
 	import { saveJob, type SealJob } from './SealRow.svelte';
 
 	let {
@@ -43,7 +44,7 @@
 		<div>
 			<p><strong>{count} not saved yet.</strong> If you start over, {unsaved.length === 1 ? 'it is' : 'they are'} gone: lockbox keeps nothing.</p>
 			<div class="confirm-actions">
-				<button class="btn btn-primary" type="button" onclick={saveAll}>
+				<button class="btn btn-primary" type="button" onclick={saveAll} use:focusOnMount>
 					<Icon name="download" size={18} />{unsaved.length === 1 ? 'Save it' : 'Save all'}
 				</button>
 				<button class="btn" type="button" onclick={onrestart}>Discard and start over</button>

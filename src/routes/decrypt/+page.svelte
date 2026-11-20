@@ -10,6 +10,7 @@
 	import { JobError, runJob } from '#lib/lockbox/client.ts';
 	import { LockboxError, SEAL_BYTES_NEEDED, readMode, sealNumber, type DecryptSecret, type Mode } from '#lib/lockbox/format.ts';
 	import { errorMessage, failureMessage, streaming } from '#lib/messages.ts';
+	import { focusOnMount } from '#lib/focus.ts';
 
 	let step = $state<1 | 2 | 3>(1);
 	let files = $state<File[]>([]);
@@ -54,6 +55,7 @@
 	const secretOk = $derived(mode === 'password' ? password.length > 0 : !!recipientPrivate && !!senderPublic);
 	const finished = $derived(jobs.length > 0 && !running);
 	const unsaved = $derived(jobs.some((j) => j.saveUrl && !j.saved));
+	const openedCount = $derived(jobs.filter((j) => j.state === 'intact').length);
 
 	const outputName = (name: string) =>
 		name.toLowerCase().endsWith('.lockbox') && name.length > 8 ? name.slice(0, -8) : `${name}.decrypted`;
@@ -149,10 +151,19 @@
 				<div class="actions">
 					<button class="btn" type="button" onclick={() => (step = 2)}>Back</button>
 					<button class="btn btn-primary" type="submit" disabled={running}>
-						<Icon name="download" size={18} />{running ? 'Checking…' : `Decrypt ${files.length === 1 ? 'file' : `${files.length} files`}`}
+						<Icon name="download" size={18} />Decrypt {files.length === 1 ? 'file' : `${files.length} files`}
 					</button>
 				</div>
 			{:else}
+				<p class="checked" tabindex="-1" use:focusOnMount>
+					{#if running}
+						<strong>Checking each file…</strong>
+					{:else if openedCount === jobs.length}
+						<strong>{jobs.length === 1 ? 'Seal intact' : 'All seals intact'}</strong>
+					{:else}
+						<strong>{openedCount} of {jobs.length} {jobs.length === 1 ? 'file' : 'files'} opened</strong>
+					{/if}
+				</p>
 				<ul class="seal-list" aria-live="polite">
 					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} />{/each}
 				</ul>
@@ -183,5 +194,12 @@
 	}
 	.summary-line {
 		color: var(--ink-2);
+	}
+	.checked {
+		margin-bottom: 12px;
+		border-radius: 5px;
+	}
+	.checked strong {
+		font-weight: 600;
 	}
 </style>
