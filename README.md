@@ -7,7 +7,7 @@ Inspired by [hat.sh](https://github.com/sh-dv/hat.sh); a clean rewrite with its 
 ## How it works
 
 - **Password mode:** Argon2id (256 MiB, 3 passes) turns the password into a key; the file is encrypted with XChaCha20-Poly1305 in 64 KiB chunks (libsodium `secretstream`).
-- **Key mode:** X25519 key exchange between the Sender's private key and the Recipient's public key. Decryption only succeeds with the real Sender's public key, so it proves who sent the file.
+- **Key mode:** X25519 key exchanges from a fresh per-file key and from the Sender's private key to the Recipient's public key. Decryption only succeeds with the real Sender's public key, so it proves who sent the file, and a Sender's key leaking later doesn't expose files already sent.
 - **Tamper detection:** every chunk is authenticated and the header is bound to the first chunk. A changed, reordered or truncated file is rejected, and the app shows a broken seal.
 - **Large files:** encryption runs in a Web Worker and output streams to disk through a service worker, so multi-gigabyte files never sit in memory. Without a service worker (e.g. Firefox private windows) output is held in memory, about 1 GB at most, and saved with a click.
 - **Seal number:** a short public code from each file's header, so sender and recipient can confirm they hold the same file.

@@ -172,10 +172,33 @@ describe('key mode', () => {
 		const original = bytes(CHUNK_BYTES + 123);
 		const sealed = await encrypt({ senderPrivate: sender.privateKey, recipientPublic: recipient.publicKey }, original);
 		expect(readMode(sealed)).toBe('key');
-		expect(sealed.length).toBe(9 + 24 + ENCRYPTED_CHUNK_BYTES + 123 + 17);
+		expect(sealed.length).toBe(9 + 32 + 24 + ENCRYPTED_CHUNK_BYTES + 123 + 17);
 		expect(
 			await decrypt({ recipientPrivate: recipient.privateKey, senderPublic: sender.publicKey }, sealed)
 		).toEqual(original);
+	});
+
+	it('uses a fresh ephemeral key for every file', async () => {
+		const [s, r] = [generateKeyPair(), generateKeyPair()];
+		const secret = { senderPrivate: s.privateKey, recipientPublic: r.publicKey };
+		const a = await encrypt(secret, bytes(10));
+		const b = await encrypt(secret, bytes(10));
+		expect(a.subarray(9, 41)).not.toEqual(b.subarray(9, 41));
+	});
+
+	it("can't be opened with only the sender's private key (sender-side forward secrecy)", async () => {
+		const [sender, recipient] = [generateKeyPair(), generateKeyPair()];
+		const sealed = await encrypt({ senderPrivate: sender.privateKey, recipientPublic: recipient.publicKey }, bytes(10));
+		// Someone who later steals the sender's key holds S_sk, S_pk and R_pk, but not R_sk or the dropped ephemeral key.
+		await expectCode(decrypt({ recipientPrivate: sender.privateKey, senderPublic: recipient.publicKey }, sealed), 'wrong-secret');
+		await expectCode(decrypt({ recipientPrivate: sender.privateKey, senderPublic: sender.publicKey }, sealed), 'wrong-secret');
+	});
+
+	it('detects a changed ephemeral key in the header', async () => {
+		const [sender, recipient] = [generateKeyPair(), generateKeyPair()];
+		const sealed = await encrypt({ senderPrivate: sender.privateKey, recipientPublic: recipient.publicKey }, bytes(10));
+		sealed[20] ^= 1;
+		await expectCode(decrypt({ recipientPrivate: recipient.privateKey, senderPublic: sender.publicKey }, sealed), 'wrong-secret');
 	});
 
 	it('fails when the claimed sender is not the real sender', async () => {
@@ -225,7 +248,7 @@ describe('seal number', () => {
 		const [s, r] = [generateKeyPair(), generateKeyPair()];
 		const keyed = await encrypt({ senderPrivate: s.privateKey, recipientPublic: r.publicKey }, bytes(10));
 		expect(sealNumber(keyed)).toMatch(/^[0-9A-F]{4}·[0-9A-F]{4}$/);
-		expect(sealNumber(keyed.subarray(0, 13))).toBe(sealNumber(keyed));
+		expect(sealNumber(keyed.subarray(0, 45))).toBe(sealNumber(keyed));
 	});
 
 	it('differs between two encryptions of the same file', async () => {

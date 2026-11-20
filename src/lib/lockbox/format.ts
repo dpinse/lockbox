@@ -7,6 +7,7 @@ export const MODE_PASSWORD = 0x01;
 export const MODE_KEY = 0x02;
 export const PREAMBLE_BYTES = 9;
 export const PASSWORD_PARAMS_BYTES = 24;
+export const KEY_PARAMS_BYTES = 32; // the per-file ephemeral X25519 public key
 export const STREAM_HEADER_BYTES = 24;
 export const CHUNK_BYTES = 64 * 1024;
 const ABYTES = 17;
@@ -72,7 +73,32 @@ export function readMode(bytes: Uint8Array): Mode {
 }
 
 function fileHeaderLength(mode: Mode) {
-	return PREAMBLE_BYTES + (mode === 'password' ? PASSWORD_PARAMS_BYTES : 0);
+	return PREAMBLE_BYTES + (mode === 'password' ? PASSWORD_PARAMS_BYTES : KEY_PARAMS_BYTES);
+}
+
+const KEY_MODE_LABEL = new TextEncoder().encode('lockbox key mode v1');
+
+/**
+ * Key mode stream key. `es` is the ephemeral–Recipient DH (sender-side forward secrecy), `ss` the
+ * Sender–Recipient DH (sender authentication). All three public keys are hashed in so the key is bound
+ * to exactly these identities. See "Key mode" in docs/format.md.
+ */
+function keyModeKey(es: Uint8Array, ss: Uint8Array, ephemeralPublic: Uint8Array, senderPublic: Uint8Array, recipientPublic: Uint8Array) {
+	const input = new Uint8Array(KEY_MODE_LABEL.length + 32 * 5);
+	[KEY_MODE_LABEL, es, ss, ephemeralPublic, senderPublic, recipientPublic].reduce((at, part) => {
+		input.set(part, at);
+		return at + part.length;
+	}, 0);
+	return sodium.crypto_generichash(32, input, null);
+}
+
+/** X25519 that maps libsodium's low-order-point rejection to a lockbox error. */
+function dh(privateKey: Uint8Array, publicKey: Uint8Array) {
+	try {
+		return sodium.crypto_scalarmult(privateKey, publicKey);
+	} catch {
+		throw new LockboxError('wrong-secret'); // e.g. an all-zero or low-order public key
+	}
 }
 
 function encryptKey(secret: EncryptSecret): { fileHeader: Uint8Array; key: Uint8Array } {
@@ -90,21 +116,20 @@ function encryptKey(secret: EncryptSecret): { fileHeader: Uint8Array; key: Uint8
 		view.setUint32(29, memlimit, true);
 		return { fileHeader, key: passwordKey(secret.password, salt, opslimit, memlimit) };
 	}
-	const fileHeader = new Uint8Array(PREAMBLE_BYTES);
+	const ephemeral = sodium.crypto_box_keypair(); // used for this file only, then dropped
+	const fileHeader = new Uint8Array(PREAMBLE_BYTES + KEY_PARAMS_BYTES);
 	fileHeader.set(MAGIC);
 	fileHeader[7] = VERSION;
 	fileHeader[8] = MODE_KEY;
+	fileHeader.set(ephemeral.publicKey, 9);
 	const senderPublic = sodium.crypto_scalarmult_base(secret.senderPrivate);
-	try {
-		const { sharedTx } = sodium.crypto_kx_client_session_keys(
-			senderPublic,
-			secret.senderPrivate,
-			secret.recipientPublic
-		);
-		return { fileHeader, key: sharedTx };
-	} catch {
-		throw new LockboxError('wrong-secret'); // e.g. an all-zero or low-order public key
-	}
+	const es = dh(ephemeral.privateKey, secret.recipientPublic);
+	const ss = dh(secret.senderPrivate, secret.recipientPublic);
+	const key = keyModeKey(es, ss, ephemeral.publicKey, senderPublic, secret.recipientPublic);
+	sodium.memzero(ephemeral.privateKey);
+	sodium.memzero(es);
+	sodium.memzero(ss);
+	return { fileHeader, key };
 }
 
 function decryptKey(fileHeader: Uint8Array, secret: DecryptSecret): Uint8Array {
@@ -126,16 +151,14 @@ function decryptKey(fileHeader: Uint8Array, secret: DecryptSecret): Uint8Array {
 		return passwordKey(secret.password, fileHeader.subarray(9, 25), opslimit, memlimit);
 	}
 	if (!('recipientPrivate' in secret)) throw new LockboxError('wrong-mode');
+	const ephemeralPublic = fileHeader.slice(9, 9 + KEY_PARAMS_BYTES);
 	const recipientPublic = sodium.crypto_scalarmult_base(secret.recipientPrivate);
-	try {
-		return sodium.crypto_kx_server_session_keys(
-			recipientPublic,
-			secret.recipientPrivate,
-			secret.senderPublic
-		).sharedRx;
-	} catch {
-		throw new LockboxError('wrong-secret'); // e.g. an all-zero or low-order public key
-	}
+	const es = dh(secret.recipientPrivate, ephemeralPublic);
+	const ss = dh(secret.recipientPrivate, secret.senderPublic);
+	const key = keyModeKey(es, ss, ephemeralPublic, secret.senderPublic, recipientPublic);
+	sodium.memzero(es);
+	sodium.memzero(ss);
+	return key;
 }
 
 /** Original bytes in, Lockbox file bytes out. Runs Argon2id on the first chunk, so it may take a second. */
@@ -239,7 +262,7 @@ export function decryptStream(secret: DecryptSecret): TransformStream<Uint8Array
 }
 
 /** Bytes from the start of a Lockbox file that are enough for `sealNumber`, whatever the mode. */
-export const SEAL_BYTES_NEEDED = PREAMBLE_BYTES + PASSWORD_PARAMS_BYTES + 4;
+export const SEAL_BYTES_NEEDED = PREAMBLE_BYTES + Math.max(PASSWORD_PARAMS_BYTES, KEY_PARAMS_BYTES) + 4;
 
 /** Short public code for one Lockbox file: the first 4 bytes of its random stream header, e.g. "4F2A·91C0". */
 export function sealNumber(bytes: Uint8Array): string {

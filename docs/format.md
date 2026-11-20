@@ -8,7 +8,7 @@ All primitives come from libsodium. Integers are unsigned, little-endian.
 
 ```
 +------------------+----------------------+---------------------+-----------+-----+-----------+
-| preamble (9 B)   | mode params (0/24 B) | stream header (24 B)| chunk 0   | ... | chunk N   |
+| preamble (9 B)   | mode params (24/32 B)| stream header (24 B)| chunk 0   | ... | chunk N   |
 +------------------+----------------------+---------------------+-----------+-----+-----------+
 ```
 
@@ -32,7 +32,13 @@ The **file header** is the preamble plus the mode params. It is authenticated (s
 | 25     | 4    | opslimit | Argon2id iterations (u32)                     |
 | 29     | 4    | memlimit | Argon2id memory in bytes (u32)                |
 
-**Key mode** (`0x02`) — 0 bytes. The keys are supplied by the user, never stored in the file.
+**Key mode** (`0x02`) — 32 bytes:
+
+| Offset | Size | Field  | Meaning                                              |
+|-------:|-----:|--------|------------------------------------------------------|
+| 9      | 32   | eph_pk | Per-file ephemeral X25519 Public key (see Key mode)  |
+
+The Sender and Recipient keys are supplied by the user and never stored in the file.
 
 ### Stream header — 24 bytes
 
@@ -49,7 +55,7 @@ The Original file is split into plaintext chunks of exactly **65,536 bytes** (64
 
 ## Header binding
 
-Chunk 0 is pushed with the full file header (preamble + mode params) as additional data. Decryption of chunk 0 passes the same bytes. Any change to the magic, version, mode, salt, or Argon2id parameters makes chunk 0 fail to decrypt. Later chunks use no additional data; secretstream already chains them.
+Chunk 0 is pushed with the full file header (preamble + mode params) as additional data. Decryption of chunk 0 passes the same bytes. Any change to the magic, version, mode, salt, Argon2id parameters, or ephemeral key makes chunk 0 fail to decrypt. Later chunks use no additional data; secretstream already chains them.
 
 ## Deriving the stream key
 
@@ -71,16 +77,27 @@ Anything outside is rejected as an invalid file, so a crafted file cannot freeze
 
 ### Key mode
 
-Uses `crypto_kx` with the Sender as client and the Recipient as server:
+An ephemeral–static plus static–static X25519 exchange (see [ADR 0003](adr/0003-ephemeral-key-in-key-mode.md)). `DH(a, B)` is `crypto_scalarmult(a, B)`; implementations must reject an all-zero result (libsodium does).
 
-- Sender: `(rx, tx) = crypto_kx_client_session_keys(sender_pk, sender_sk, recipient_pk)`; `key = tx`.
-- Recipient: `(rx, tx) = crypto_kx_server_session_keys(recipient_pk, recipient_sk, sender_pk)`; `key = rx`.
+Sender:
 
-The Recipient must supply the Sender's Public key; decryption succeeds only if it matches the Sender's Private key used to encrypt. That is what makes the Sender authenticated.
+1. Generate a fresh X25519 key pair `(eph_sk, eph_pk)` for this file and write `eph_pk` into the mode params.
+2. `es = DH(eph_sk, recipient_pk)` and `ss = DH(sender_sk, recipient_pk)`, where `sender_pk = crypto_scalarmult_base(sender_sk)`.
+3. Erase `eph_sk` after deriving the key. It is never stored.
 
-Known properties of this static-key design, accepted for v1:
+Recipient:
 
-- **No forward secrecy.** If either Private key leaks later, past files between that pair can be decrypted.
+1. Read `eph_pk` from the mode params.
+2. `es = DH(recipient_sk, eph_pk)` and `ss = DH(recipient_sk, sender_pk)`, where `recipient_pk = crypto_scalarmult_base(recipient_sk)`.
+
+Both: `key = BLAKE2b-256( "lockbox key mode v1" ‖ es ‖ ss ‖ eph_pk ‖ sender_pk ‖ recipient_pk )` (`crypto_generichash`, unkeyed; the label is its 19 ASCII bytes).
+
+The Recipient must supply the Sender's Public key; decryption succeeds only if it matches the Sender's Private key used to encrypt (`ss`). That is what makes the Sender authenticated. `eph_pk` sits in the file header, so header binding also covers it.
+
+Known properties, accepted for v1:
+
+- **Sender-side forward secrecy.** A Sender's Private key leaking later does not expose files they already sent: opening one also needs `eph_sk`, which was erased, or the Recipient's Private key.
+- **No Recipient-side forward secrecy.** Whoever holds the Recipient's Private key can open every file sent to it. This is inherent to files read long after they are sent; rotating Key pairs limits the exposure.
 - **Key compromise impersonation.** Whoever holds the Recipient's Private key can forge files that appear to come from any Sender, to that Recipient.
 
 ## Decoding and errors
