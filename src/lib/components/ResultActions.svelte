@@ -8,8 +8,16 @@
 		jobs = $bindable(),
 		moreLabel,
 		onrestart,
+		quietMore = false,
 		children
-	}: { jobs: SealJob[]; moreLabel: string; onrestart: () => void; children?: Snippet } = $props();
+	}: {
+		jobs: SealJob[];
+		moreLabel: string;
+		onrestart: () => void;
+		/** Another action (e.g. a retry) is the step's primary, so "more files" stays secondary. */
+		quietMore?: boolean;
+		children?: Snippet;
+	} = $props();
 
 	// Results held in memory (no service worker) exist only in this tab until the user saves them.
 	const unsaved = $derived(jobs.filter((j) => j.saveUrl && !j.saved));
@@ -59,7 +67,7 @@
 		<button class="btn btn-primary" type="button" onclick={saveAll}><Icon name="download" size={18} />Save all ({unsaved.length})</button>
 	{/if}
 	{#if !confirming}
-		<button class={unsaved.length ? 'btn' : 'btn btn-primary'} type="button" onclick={restart}>{moreLabel}</button>
+		<button class={unsaved.length || quietMore ? 'btn' : 'btn btn-primary'} type="button" onclick={restart}>{moreLabel}</button>
 	{/if}
 </div>
 

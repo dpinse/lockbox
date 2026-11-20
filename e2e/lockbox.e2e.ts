@@ -84,6 +84,7 @@ test('a tampered file shows a broken seal', async ({ page }) => {
 	await decryptWithPassword(page, { name: sealed.name, buffer: tampered }, PASSWORD);
 	await decryptButton(page).click();
 	await expect(page.getByText('Seal broken')).toBeVisible({ timeout: 15_000 });
+	await expect(page.getByText('Ask the sender to send it again.')).toBeVisible();
 });
 
 test('bundle produces one dated .zip.lockbox', async ({ page }) => {
@@ -194,6 +195,8 @@ test('a small file that will not open stays in step 3 with a retry', async ({ pa
 
 	await page.getByRole('button', { name: 'Try another password' }).click();
 	await expect(page.getByRole('heading', { name: 'Enter the password' })).toBeFocused();
+	await expect(page.getByText("That password didn't open it.")).toBeVisible();
+	await expect(passwordBox(page)).toHaveValue('');
 	await expect(page.getByText('1 file', { exact: true })).toBeVisible(); // the chosen file is kept
 });
 

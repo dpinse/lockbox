@@ -9,7 +9,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import { JobError, runJob } from '#lib/lockbox/client.ts';
 	import { LockboxError, SEAL_BYTES_NEEDED, readMode, sealNumber, type DecryptSecret, type Mode } from '#lib/lockbox/format.ts';
-	import { errorMessage, failureMessage, streaming } from '#lib/messages.ts';
+	import { errorMessage, streaming } from '#lib/messages.ts';
 	import { focusOnMount } from '#lib/focus.ts';
 
 	let step = $state<1 | 2 | 3>(1);
@@ -24,6 +24,7 @@
 	let senderPublic = $state<Uint8Array | null>(null);
 	let jobs = $state<SealJob[]>([]);
 	let running = $state(false);
+	let retried = $state(false); // the last secret failed to open at least one file
 
 	// Read each file's header as soon as it is chosen: mode decides step 2, the seal number labels step 3.
 	$effect(() => {
@@ -57,6 +58,10 @@
 	const unsavedCount = $derived(jobs.filter((j) => j.saveUrl && !j.saved).length);
 	const unsaved = $derived(unsavedCount > 0);
 	const openedCount = $derived(jobs.filter((j) => j.state === 'intact').length);
+	const hasLocked = $derived(jobs.some((j) => j.state === 'locked'));
+	const tornCount = $derived(jobs.filter((j) => j.state === 'torn').length);
+	const hasTorn = $derived(tornCount > 0);
+	let tornStreamed = $state(false);
 
 	const outputName = (name: string) =>
 		name.toLowerCase().endsWith('.lockbox') && name.length > 8 ? name.slice(0, -8) : `${name}.decrypted`;
@@ -66,6 +71,7 @@
 		const secret: DecryptSecret =
 			mode === 'password' ? { password } : { recipientPrivate: recipientPrivate!, senderPublic: senderPublic! };
 		const streamed = streaming();
+		retried = false;
 		running = true;
 		jobs = files.map((f, i) => ({ name: outputName(f.name), seal: seals[i] ?? '', state: 'waiting', done: 0, total: f.size }));
 		for (const [i, file] of files.entries()) {
@@ -81,7 +87,8 @@
 				const code = err instanceof JobError ? err.code : 'unknown';
 				// A first chunk that won't open can't tell a wrong secret from tampering, so say both.
 				jobs[i].state = code === 'wrong-secret' ? 'locked' : code === 'altered' || code === 'incomplete' ? 'torn' : 'failed';
-				jobs[i].message = failureMessage(code, streamed);
+				jobs[i].message = errorMessage[code]; // what to do next is in the note under the list
+				if (code === 'altered' || code === 'incomplete') tornStreamed = streamed;
 			}
 		}
 		running = false;
@@ -90,6 +97,8 @@
 	function retry() {
 		for (const j of jobs) if (j.saveUrl) URL.revokeObjectURL(j.saveUrl);
 		jobs = [];
+		password = '';
+		retried = true;
 		step = 2;
 	}
 
@@ -132,6 +141,9 @@
 		</Step>
 
 		<Step n={2} title={secretTitle} state={stateOf(2)} summary={mode === 'key' ? 'Keys' : 'Password'} onedit={editable(2)} onsubmit={() => secretOk && (step = 3)}>
+			{#if retried}
+				<p class="notice danger" role="alert"><Icon name="alert" size={18} />{mode === 'key' ? "Those keys didn't open it." : "That password didn't open it."} Check it, or ask the sender which one they used.</p>
+			{/if}
 			<div class="secret">
 				{#if mode === 'password'}
 					<PasswordField bind:value={password} mode="current" />
@@ -172,9 +184,16 @@
 					{#if !unsaved && jobs.every((j) => j.state === 'intact' && j.seal)}
 						<p class="notice compare"><Icon name="check" size={18} />Every seal is intact. If the seal numbers match the sender's, you have exactly the files they sent.</p>
 					{/if}
-					<ResultActions bind:jobs moreLabel="Decrypt more files" onrestart={startOver}>
-						{#if jobs.some((j) => j.state === 'locked')}
-							<button class="btn" type="button" onclick={retry}>{mode === 'key' ? 'Try other keys' : 'Try another password'}</button>
+					{#if hasTorn}
+						<p class="notice danger next">
+							<Icon name="alert" size={18} />
+							{#if tornStreamed}If part of a broken file was saved, delete it: it is incomplete.{:else}{tornCount === 1 ? "The broken file wasn't saved." : "The broken files weren't saved."}{/if}
+							Ask the sender to send {tornCount === 1 ? 'it' : 'them'} again.
+						</p>
+					{/if}
+					<ResultActions bind:jobs moreLabel="Decrypt more files" onrestart={startOver} quietMore={hasLocked}>
+						{#if hasLocked}
+							<button class={unsaved ? 'btn' : 'btn btn-primary'} type="button" onclick={retry}>{mode === 'key' ? 'Try other keys' : 'Try another password'}</button>
 						{/if}
 					</ResultActions>
 				{/if}
@@ -189,6 +208,9 @@
 	}
 	.notice {
 		margin-bottom: 16px;
+	}
+	.notice.next {
+		margin: 16px 0 0;
 	}
 	.notice.compare {
 		margin: 16px 0 0;
