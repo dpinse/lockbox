@@ -10,7 +10,7 @@ Encrypt and decrypt files in your browser with a password or a key pair. Nothing
 - **Large files:** encryption runs in a Web Worker and output streams to disk through a service worker, so multi-gigabyte files never sit in memory. Without a service worker (e.g. Firefox private windows) output is held in memory, about 1 GB at most, and saved with a click.
 - **Seal number:** an 80-bit BLAKE2b fingerprint of the whole encrypted file. If the sender's and recipient's numbers match, the recipient has exactly the file that was sent; nobody, password holders included, can forge a different file with the same number.
 
-The exact byte layout is in [docs/format.md](docs/format.md); design decisions are in [docs/adr/](docs/adr/).
+The exact byte layout is in [docs/format.md](docs/format.md); design decisions are in [docs/adr/](docs/adr/); known gaps are in [docs/open-items.md](docs/open-items.md).
 
 ## Develop
 
