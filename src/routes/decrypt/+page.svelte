@@ -116,7 +116,7 @@
 
 <section class="card after-nav" aria-label="Decrypt files">
 	<ol class="steps">
-		<Step n={1} title="Choose lockbox files" state={stateOf(1)} summary="{files.length} {files.length === 1 ? 'file' : 'files'}" onedit={editable(1)}>
+		<Step n={1} title="Choose lockbox files" state={stateOf(1)} summary="{files.length} {files.length === 1 ? 'file' : 'files'}" onedit={editable(1)} onsubmit={() => mode && (step = 2)}>
 			<DropZone bind:files accept=".lockbox" label="Drag .lockbox files here, or" />
 			{#if fileError}<p class="error" role="alert">{fileError}</p>{/if}
 			{#if mode}
@@ -126,11 +126,11 @@
 				</p>
 			{/if}
 			<div class="actions">
-				<button class="btn btn-primary" type="button" disabled={!mode} onclick={() => (step = 2)}>Next</button>
+				<button class="btn btn-primary" type="submit" disabled={!mode}>Next</button>
 			</div>
 		</Step>
 
-		<Step n={2} title={secretTitle} state={stateOf(2)} summary={mode === 'key' ? 'Keys' : 'Password'} onedit={editable(2)}>
+		<Step n={2} title={secretTitle} state={stateOf(2)} summary={mode === 'key' ? 'Keys' : 'Password'} onedit={editable(2)} onsubmit={() => secretOk && ((wrongSecret = false), (step = 3))}>
 			{#if wrongSecret}
 				<p class="notice danger" role="alert"><Icon name="alert" size={18} />{errorMessage['wrong-secret']} Nothing was saved.</p>
 			{/if}
@@ -144,16 +144,16 @@
 			</div>
 			<div class="actions">
 				<button class="btn" type="button" onclick={() => (step = 1)}>Back</button>
-				<button class="btn btn-primary" type="button" disabled={!secretOk} onclick={() => ((wrongSecret = false), (step = 3))}>Next</button>
+				<button class="btn btn-primary" type="submit" disabled={!secretOk}>Next</button>
 			</div>
 		</Step>
 
-		<Step n={3} title={unsaved ? 'Save your files' : 'Decrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.some((j) => j.state === 'intact')}>
+		<Step n={3} title={unsaved ? 'Save your files' : 'Decrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.some((j) => j.state === 'intact')} onsubmit={decrypt}>
 			{#if !jobs.length}
 				<p class="summary-line">Each file is checked as it is decrypted. If anything was changed, decryption stops.</p>
 				<div class="actions">
 					<button class="btn" type="button" onclick={() => (step = 2)}>Back</button>
-					<button class="btn btn-primary" type="button" onclick={decrypt} disabled={running}>
+					<button class="btn btn-primary" type="submit" disabled={running}>
 						<Icon name="download" size={18} />{running ? 'Checking…' : `Decrypt ${files.length === 1 ? 'file' : `${files.length} files`}`}
 					</button>
 				</div>

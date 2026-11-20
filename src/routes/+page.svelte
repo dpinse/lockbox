@@ -122,7 +122,7 @@
 
 <section class="card after-nav" aria-label="Encrypt files">
 	<ol class="steps">
-		<Step n={1} title="Choose files" state={stateOf(1)} summary={filesSummary} onedit={editable(1)}>
+		<Step n={1} title="Choose files" state={stateOf(1)} summary={filesSummary} onedit={editable(1)} onsubmit={() => files.length && (step = 2)}>
 			<DropZone bind:files label="Drag files here, or" />
 			{#if files.length > 1}
 				<label class="check">
@@ -131,11 +131,11 @@
 				</label>
 			{/if}
 			<div class="actions">
-				<button class="btn btn-primary" type="button" disabled={!files.length} onclick={() => (step = 2)}>Next</button>
+				<button class="btn btn-primary" type="submit" disabled={!files.length}>Next</button>
 			</div>
 		</Step>
 
-		<Step n={2} title="Choose a password or key" state={stateOf(2)} summary={mode === 'password' ? 'Password' : 'Key'} onedit={editable(2)}>
+		<Step n={2} title="Choose a password or key" state={stateOf(2)} summary={mode === 'password' ? 'Password' : 'Key'} onedit={editable(2)} onsubmit={() => secretOk && (step = 3)}>
 			<Segmented label="Encrypt with" bind:value={mode} options={[{ value: 'password', label: 'Password' }, { value: 'key', label: 'Key' }]} />
 			<div class="secret">
 				{#if mode === 'password'}
@@ -148,11 +148,11 @@
 			</div>
 			<div class="actions">
 				<button class="btn" type="button" onclick={() => (step = 1)}>Back</button>
-				<button class="btn btn-primary" type="button" disabled={!secretOk} onclick={() => (step = 3)}>Next</button>
+				<button class="btn btn-primary" type="submit" disabled={!secretOk}>Next</button>
 			</div>
 		</Step>
 
-		<Step n={3} title={unsaved ? 'Save your files' : 'Encrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.some((j) => j.state === 'sealed')}>
+		<Step n={3} title={unsaved ? 'Save your files' : 'Encrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.some((j) => j.state === 'sealed')} onsubmit={encrypt}>
 			{#if !jobs.length}
 				<p class="summary-line">
 					{willBundle
@@ -162,7 +162,7 @@
 				</p>
 				<div class="actions">
 					<button class="btn" type="button" onclick={() => (step = 2)}>Back</button>
-					<button class="btn btn-primary" type="button" onclick={encrypt}>
+					<button class="btn btn-primary" type="submit">
 						<Icon name="download" size={18} />Encrypt {willBundle ? 'bundle' : files.length === 1 ? 'file' : `${files.length} files`}
 					</button>
 				</div>

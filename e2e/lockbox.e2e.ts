@@ -160,3 +160,19 @@ test('memory-held results are guarded until saved', async ({ browser }) => {
 	await expect(page.getByLabel('Browse files')).toBeAttached();
 	await context.close();
 });
+
+test('steps work from the keyboard and move focus to the opened step', async ({ page }) => {
+	await page.goto('/');
+	await choose(page, [{ name: 'notes.txt', buffer: original }]);
+	await page.getByRole('button', { name: 'Next' }).focus();
+	await page.keyboard.press('Enter');
+	await expect(page.getByRole('heading', { name: 'Choose a password or key' })).toBeFocused();
+
+	// Enter in the password field submits the step, but only once the password is long enough.
+	await passwordBox(page).fill('too short');
+	await passwordBox(page).press('Enter');
+	await expect(page.getByRole('heading', { name: 'Choose a password or key' })).toBeVisible();
+	await passwordBox(page).fill(PASSWORD);
+	await passwordBox(page).press('Enter');
+	await expect(page.getByRole('heading', { name: 'Encrypt and save' })).toBeFocused();
+});
