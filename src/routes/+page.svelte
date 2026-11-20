@@ -16,7 +16,6 @@
 	import InlineKeyPair from '#lib/components/InlineKeyPair.svelte';
 	import { MIN_PASSWORD_LENGTH } from '#lib/password.ts';
 	import { failureMessage, streaming, today } from '#lib/messages.ts';
-	import { sealPulse } from '#lib/seal.svelte.ts';
 	import { focusOnMount } from '#lib/focus.ts';
 
 	let step = $state<1 | 2 | 3>(1);
@@ -36,9 +35,8 @@
 	let cardPulse = $state(0);
 	let pulsedOnSave = false;
 
-	// The lid closes once the files are really on disk: at the end of a streamed run, or on the first Save.
+	// The in-card chest closes once the files are really on disk: at the end of a streamed run, or on the first Save.
 	function seal() {
-		sealPulse.count++;
 		cardPulse++;
 	}
 	$effect(() => {

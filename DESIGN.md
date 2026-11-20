@@ -329,7 +329,7 @@ Every output file gets a row: a 156px seal strip on the left, the file name and 
 - **Waiting / working:** the strip is drawn but not applied: transparent with an inset wash outline, blue placeholder serial, grey dashed edge. A 3px tape-blue progress bar grows along the bottom of the row; status shows the percentage.
 - **Torn:** the strip turns seal red, the legend reads "BROKEN", and a jagged cut-out replaces the perforation. Status and message go red with an alert icon.
 - **Failed:** an unapplied strip in ink 3, red message and status ("Not saved").
-- **Motion:** on sealing, the strip lays across from its left edge (clip-path reveal, 520ms, ease-out `cubic-bezier(0.16, 1, 0.3, 1)`). On success the logo lid lifts and drops shut once (760ms). With reduced motion the lid does not move and the seal appears without travel.
+- **Motion:** on sealing, the strip lays across from its left edge (clip-path reveal, 520ms, ease-out `cubic-bezier(0.16, 1, 0.3, 1)`). When the files are sealed and saved, the 40px chest above the Encrypt results lifts its lid and drops it shut once (760ms); the header logo stays still. With reduced motion the lid does not move and the seal appears without travel.
 
 ## Do's and Don'ts
 
@@ -347,5 +347,5 @@ Every output file gets a row: a 156px seal strip on the left, the file name and 
 - **Don't** fill a whole header band, page background or large area with tape blue; the calm grey ground is part of the look.
 - **Don't** put Martian Mono on labels, headings or buttons.
 - **Don't** add shadows inside the card or raise a second surface on the page (The One Card Rule).
-- **Don't** spread the treasure box beyond the logo and its single lid-closing animation.
+- **Don't** spread the treasure box beyond the header logo and the one results chest with its single lid-closing animation.
 - **Don't** reuse the seal-kind legend style (10px tracked capitals) outside the seal strip; it is the tape's printing, not a heading style.

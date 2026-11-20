@@ -41,7 +41,7 @@ Nothing leaves the device: no upload, no account, no server processing. It is a 
 ## Brand Commitments
 
 - Name: lockbox, written lowercase.
-- Logo: a treasure box. The treasure box appears only in the logo and one lid-closing animation when a file is encrypted; it is not a theme applied across the interface.
+- Logo: a treasure box. Beyond the header logo, it appears once more: a chest in the Encrypt results that closes its lid when the files are sealed and saved. That is the only animation of it; it is not a theme applied across the interface.
 - Voice: plain and calm. Short, direct, reassuring copy. Personality stays in the logo and the animation, not the words.
 - Light and dark themes, following the system setting, with a manual toggle.
 

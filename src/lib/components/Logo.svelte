@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { sealPulse } from '#lib/seal.svelte.ts';
 
-	// `pulse` lets a caller drive its own copy; without it the logo follows the site-wide seal pulse.
+	// Each change of `pulse` closes the lid once. Without it (the header logo) the chest stays still.
 	let { size = 30, pulse }: { size?: number; pulse?: number } = $props();
 
-	const trigger = $derived(pulse ?? sealPulse.count);
+	const trigger = $derived(pulse);
 	let playing = $state(false);
 	let seen: number | undefined;
 	$effect(() => {
