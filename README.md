@@ -8,7 +8,7 @@ Encrypt and decrypt files in your browser with a password or a key pair. Nothing
 - **Key mode:** X25519 key exchanges from a fresh per-file key and from the Sender's private key to the Recipient's public key. Decryption only succeeds with the real Sender's public key, so it proves who sent the file, and a Sender's key leaking later doesn't expose files already sent.
 - **Tamper detection:** every chunk is authenticated and the header is bound to the first chunk. A changed, reordered or truncated file is rejected, and the app shows a broken seal.
 - **Large files:** encryption runs in a Web Worker and output streams to disk through a service worker, so multi-gigabyte files never sit in memory. Without a service worker (e.g. Firefox private windows) output is held in memory, about 1 GB at most, and saved with a click.
-- **Seal number:** a short public code from each file's header, so sender and recipient can confirm they hold the same file.
+- **Seal number:** an 80-bit BLAKE2b fingerprint of the whole encrypted file. If the sender's and recipient's numbers match, the recipient has exactly the file that was sent; nobody, password holders included, can forge a different file with the same number.
 
 The exact byte layout is in [docs/format.md](docs/format.md); design decisions are in [docs/adr/](docs/adr/).
 
@@ -36,6 +36,10 @@ terraform init
 terraform apply
 ```
 
+Sharing an AWS account with other projects? Every lockbox resource is tagged `Project=lockbox`, and the budget alert counts only that tag, so other workloads won't trip it. Activate `Project` under Billing → Cost allocation tags for the filter to take effect, or set `create_budget = false`. If you already deploy from GitHub Actions, set `create_github_oidc_provider = false` (an account can hold only one GitHub OIDC provider).
+
+The deploy role trusts only the `production` environment of this repository. In GitHub, Settings → Environments → production, set **Deployment branches** to `main` only (and optionally add yourself as a required reviewer), so nothing but reviewed code on `main` can deploy.
+
 Then in GitHub, Settings → Secrets and variables → Actions → Variables, add:
 
 | Variable | Value |
@@ -44,6 +48,17 @@ Then in GitHub, Settings → Secrets and variables → Actions → Variables, ad
 | `S3_BUCKET` | `terraform output -raw s3_bucket` |
 | `CLOUDFRONT_DISTRIBUTION_ID` | `terraform output -raw cloudfront_distribution_id` |
 | `AWS_DEPLOY_ROLE_ARN` | `terraform output -raw deploy_role_arn` |
+
+### Custom domain (DNS in Cloudflare or elsewhere)
+
+Set `domain_name = "lockbox.example.com"` in `terraform.tfvars`, then:
+
+1. `terraform apply -target=aws_acm_certificate.site` creates the TLS certificate (in us-east-1, as CloudFront requires).
+2. `terraform output certificate_validation_record`: add that CNAME in Cloudflare.
+3. `terraform apply` waits for the certificate to be issued (usually minutes), then attaches the domain to CloudFront.
+4. `terraform output site_dns_record`: add that CNAME in Cloudflare (a bare domain works too; Cloudflare flattens it).
+
+Set both records to **DNS only** (grey cloud). Proxying through Cloudflare would put a second CDN, and a second TLS termination, in front of a privacy tool, and can break certificate validation. Share links pick up the new domain automatically.
 
 Every push to `main` then tests, builds and deploys. The site is at `terraform output -raw site_url`.
 

@@ -50,7 +50,7 @@
 <li class="row" data-state={job.state}>
 	<div class="seal" aria-hidden={!job.seal}>
 		<span class="kind">{job.state === 'torn' ? 'BROKEN' : 'SEAL Nº'}</span>
-		<span class="mono num">{job.seal || '····-····'}</span>
+		<span class="mono num">{#if job.seal}{job.seal.slice(0, 15)}<wbr />{job.seal.slice(15)}{:else}····{/if}</span>
 		{#if job.state === 'torn'}<svg class="tear" viewBox="0 0 14 60" preserveAspectRatio="none" aria-hidden="true"><path d="M4 0 L9 0 L7 6 L11 11 L6 17 L10 23 L5 29 L9 35 L4 41 L8 47 L3 53 L7 60 L2 60 L0 54 L4 48 L0 42 L5 36 L1 30 L6 24 L2 18 L7 12 L3 6 Z" /></svg>{/if}
 	</div>
 	<div class="info">
@@ -106,6 +106,7 @@
 		font: 600 10px/1.2 var(--font);
 		letter-spacing: 0.12em;
 		opacity: 0.85;
+		white-space: nowrap;
 	}
 	.num {
 		font-size: 13px;

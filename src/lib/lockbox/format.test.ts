@@ -8,12 +8,14 @@ import {
 	decryptStream,
 	encryptStream,
 	readMode,
-	sealNumber,
+	sealHasher,
+	sealOf,
 	ready,
 	type DecryptSecret,
 	type EncryptSecret
 } from './format';
 import { generateKeyPair } from './keys';
+import sodium from 'libsodium-wrappers-sumo';
 
 // Cheapest parameters the decoder accepts, so tests stay fast.
 const FAST = { opslimit: 1, memlimit: 8 * 1024 * 1024 };
@@ -241,19 +243,24 @@ describe('key mode', () => {
 });
 
 describe('seal number', () => {
-	it('reads the first 4 stream-header bytes in both modes', async () => {
+	it('is the first 80 bits of BLAKE2b-256 over the whole file, in groups of 4', async () => {
 		const sealed = await encrypt({ password: PASSWORD, ...FAST }, bytes(10));
-		const hex = Buffer.from(sealed.subarray(33, 37)).toString('hex').toUpperCase();
-		expect(sealNumber(sealed)).toBe(`${hex.slice(0, 4)}·${hex.slice(4)}`);
-		const [s, r] = [generateKeyPair(), generateKeyPair()];
-		const keyed = await encrypt({ senderPrivate: s.privateKey, recipientPublic: r.publicKey }, bytes(10));
-		expect(sealNumber(keyed)).toMatch(/^[0-9A-F]{4}·[0-9A-F]{4}$/);
-		expect(sealNumber(keyed.subarray(0, 45))).toBe(sealNumber(keyed));
+		const expected = Buffer.from(sodium.crypto_generichash(32, sealed, null).subarray(0, 10)).toString('hex').toUpperCase();
+		expect(sealOf(sealed)).toBe(expected.match(/.{4}/g)!.join('·'));
+		expect(sealOf(sealed)).toMatch(/^([0-9A-F]{4}·){4}[0-9A-F]{4}$/);
 	});
 
-	it('differs between two encryptions of the same file', async () => {
-		const a = await encrypt({ password: PASSWORD, ...FAST }, bytes(10));
-		const b = await encrypt({ password: PASSWORD, ...FAST }, bytes(10));
-		expect(sealNumber(a)).not.toBe(sealNumber(b));
+	it('gives the same result when hashed in streamed pieces', async () => {
+		const sealed = await encrypt({ password: PASSWORD, ...FAST }, bytes(3 * CHUNK_BYTES + 5));
+		const h = sealHasher();
+		for (let i = 0; i < sealed.length; i += 9_999) h.update(sealed.subarray(i, i + 9_999));
+		expect(h.digest()).toBe(sealOf(sealed));
+	});
+
+	it('changes when any byte of the file changes, so a forged file cannot match', async () => {
+		const sealed = await encrypt({ password: PASSWORD, ...FAST }, bytes(10));
+		const forged = sealed.slice();
+		forged[forged.length - 1] ^= 1;
+		expect(sealOf(forged)).not.toBe(sealOf(sealed));
 	});
 });
