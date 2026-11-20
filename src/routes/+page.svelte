@@ -12,7 +12,8 @@
 	import Logo from '#lib/components/Logo.svelte';
 	import { JobError, runJob } from '#lib/lockbox/client.ts';
 	import type { EncryptSecret } from '#lib/lockbox/format.ts';
-	import { keyFromFragment } from '#lib/lockbox/keys.ts';
+	import { encodeKey, keyFromFragment, publicFromPrivate } from '#lib/lockbox/keys.ts';
+	import InlineKeyPair from '#lib/components/InlineKeyPair.svelte';
 	import { MIN_PASSWORD_LENGTH } from '#lib/password.ts';
 	import { failureMessage, streaming, today } from '#lib/messages.ts';
 	import { sealPulse } from '#lib/seal.svelte.ts';
@@ -30,6 +31,8 @@
 	let jobs = $state<SealJob[]>([]);
 	let running = $state(false);
 	let copied = $state(false);
+	let sharedFor = $state(''); // recipient key that arrived in a share link
+	let copiedPublic = $state(false);
 	let cardPulse = $state(0);
 	let pulsedOnSave = false;
 
@@ -50,6 +53,7 @@
 		if (shared) {
 			mode = 'key';
 			recipientPublicText = shared;
+			sharedFor = shared;
 		}
 	});
 
@@ -92,6 +96,15 @@
 		if (sealedAny && !jobs.some((j) => j.saveUrl)) seal();
 	}
 
+	// The recipient needs the sender's public key to open a Key mode file.
+	const senderPublicText = $derived(senderPrivate ? encodeKey('public', publicFromPrivate(senderPrivate)) : '');
+
+	async function copyPublic() {
+		await navigator.clipboard.writeText(senderPublicText);
+		copiedPublic = true;
+		setTimeout(() => (copiedPublic = false), 1600);
+	}
+
 	async function copyPassword() {
 		await navigator.clipboard.writeText(password);
 		copied = true;
@@ -124,6 +137,12 @@
 <section class="card after-nav" aria-label="Encrypt files">
 	<ol class="steps">
 		<Step n={1} title="Choose files" state={stateOf(1)} summary={filesSummary} onedit={editable(1)} onsubmit={() => files.length && (step = 2)}>
+			{#if sharedFor}
+				<p class="notice for">
+					<Icon name="key" size={18} />
+					<span>You're encrypting for <span class="mono">{sharedFor.slice(0, 24)}…</span> Only the owner of that key can open these files.</span>
+				</p>
+			{/if}
 			<DropZone bind:files label="Drag files here, or" />
 			{#if files.length > 1}
 				<label class="check">
@@ -142,9 +161,9 @@
 				{#if mode === 'password'}
 					<PasswordField bind:value={password} mode="new" />
 				{:else}
+					<KeyField label="Recipient's public key" kind="public" hint={sharedFor && recipientPublicText === sharedFor ? 'Filled in from the link you opened.' : 'Only the person with the matching private key can open the file.'} bind:value={recipientPublicText} bind:key={recipientPublic} />
 					<KeyField label="Your private key" kind="private" hint="Proves the file came from you. It never leaves this device." bind:value={senderPrivateText} bind:key={senderPrivate} />
-					<KeyField label="Recipient's public key" kind="public" hint="Only the person with the matching private key can open the file." bind:value={recipientPublicText} bind:key={recipientPublic} />
-					<p class="hint">No keys yet? <a href="/keys">Create a key pair</a>.</p>
+					<InlineKeyPair oncreate={(text) => (senderPrivateText = text)} />
 				{/if}
 			</div>
 			<div class="actions">
@@ -189,10 +208,16 @@
 					<p class="notice">
 						<Icon name="key" size={18} />
 						<span>
-							{#if mode === 'password'}Send the password separately, for example by phone.{/if}
+							{#if mode === 'password'}Send the password separately, for example by phone.{:else}Send your public key along with the file: the recipient needs it to open it.{/if}
 							The recipient sees the same seal number when they open the file, so you can confirm it's the right one.
 						</span>
 					</p>
+					{#if mode === 'key' && senderPublicText}
+						<div class="your-key">
+							<span class="mono">{senderPublicText}</span>
+							<button class="btn" type="button" onclick={copyPublic}><Icon name={copiedPublic ? 'check' : 'copy'} size={18} />{copiedPublic ? 'Copied' : 'Copy your public key'}</button>
+						</div>
+					{/if}
 					<ResultActions bind:jobs moreLabel="Encrypt more files" onrestart={startOver}>
 						{#if mode === 'password'}
 							<button class="btn" type="button" onclick={copyPassword}><Icon name={copied ? 'check' : 'copy'} size={18} />{copied ? 'Copied' : 'Copy password'}</button>
@@ -213,6 +238,24 @@
 	}
 	.notice {
 		margin-top: 16px;
+	}
+	.for {
+		margin-bottom: 14px;
+	}
+	.your-key {
+		display: grid;
+		gap: 8px;
+		justify-items: start;
+		margin-top: 10px;
+	}
+	.your-key .mono {
+		width: 100%;
+		padding: 10px 12px;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--line-strong);
+		background: var(--field);
+		word-break: break-all;
+		user-select: all;
 	}
 	.sealed {
 		display: flex;

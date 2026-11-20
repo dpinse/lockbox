@@ -213,3 +213,30 @@ test('an unsaved private key is not replaced without asking', async ({ page }) =
 	await page.getByRole('button', { name: 'Create a different key pair' }).click();
 	expect(await page.locator('p.key').nth(1).innerText()).not.toBe(first);
 });
+
+test('a share-link visitor without keys can create them inline and send', async ({ page }) => {
+	await page.goto('/keys');
+	await page.getByRole('button', { name: 'Create a key pair' }).click();
+	const bob = { pub: await page.locator('p.key').nth(0).innerText(), priv: await page.locator('p.key').nth(1).innerText() };
+
+	await page.goto(`/#to=${bob.pub}`);
+	await expect(page.getByText("You're encrypting for")).toBeVisible();
+	await choose(page, [{ name: 'secret.bin', buffer: original }]);
+	await next(page);
+	await expect(page.getByRole('textbox', { name: "Recipient's public key" })).toHaveValue(bob.pub);
+	await page.getByRole('button', { name: 'Create one here' }).click();
+	await expect(page.getByText('Your new key pair')).toBeVisible();
+	await next(page);
+	const sealed = await download(page, () => encryptButton(page).click());
+	const alicePub = await page.locator('.your-key .mono').innerText();
+	expect(alicePub).toMatch(/^lockbox-pub-/);
+
+	await page.goto('/decrypt');
+	await choose(page, [sealed]);
+	await next(page);
+	await page.getByRole('textbox', { name: 'Your private key' }).fill(bob.priv);
+	await page.getByRole('textbox', { name: "Sender's public key" }).fill(alicePub);
+	await next(page);
+	const opened = await download(page, () => decryptButton(page).click());
+	expect(opened.buffer.equals(original)).toBe(true);
+});
