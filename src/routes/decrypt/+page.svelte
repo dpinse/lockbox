@@ -9,7 +9,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import { JobError, runJob } from '#lib/lockbox/client.ts';
 	import { LockboxError, SEAL_BYTES_NEEDED, readMode, sealNumber, type DecryptSecret, type Mode } from '#lib/lockbox/format.ts';
-	import { errorMessage } from '#lib/messages.ts';
+	import { errorMessage, failureMessage, streaming } from '#lib/messages.ts';
 
 	let step = $state<1 | 2 | 3>(1);
 	let files = $state<File[]>([]);
@@ -54,6 +54,7 @@
 
 	const secretOk = $derived(mode === 'password' ? password.length > 0 : !!recipientPrivate && !!senderPublic);
 	const finished = $derived(jobs.length > 0 && !running);
+	const unsaved = $derived(jobs.some((j) => j.saveUrl && !j.saved));
 
 	const outputName = (name: string) =>
 		name.toLowerCase().endsWith('.lockbox') && name.length > 8 ? name.slice(0, -8) : `${name}.decrypted`;
@@ -62,6 +63,7 @@
 		if (!mode || !secretOk || running) return;
 		const secret: DecryptSecret =
 			mode === 'password' ? { password } : { recipientPrivate: recipientPrivate!, senderPublic: senderPublic! };
+		const streamed = streaming();
 		running = true;
 		wrongSecret = false;
 		jobs = files.map((f, i) => ({ name: outputName(f.name), seal: seals[i] ?? '', state: 'waiting', done: 0, total: f.size }));
@@ -73,7 +75,7 @@
 				});
 				jobs[i].state = 'intact';
 				jobs[i].saveUrl = saveUrl;
-				jobs[i].message = saveUrl ? 'Ready. Click Save to keep it.' : 'Saved to your downloads';
+				jobs[i].message = saveUrl ? 'Decrypted, not saved yet' : 'Saved to your downloads';
 			} catch (err) {
 				const code = err instanceof JobError ? err.code : 'unknown';
 				if (code === 'wrong-secret') {
@@ -83,7 +85,7 @@
 					break;
 				}
 				jobs[i].state = code === 'altered' || code === 'incomplete' ? 'torn' : 'failed';
-				jobs[i].message = errorMessage[code];
+				jobs[i].message = failureMessage(code, streamed);
 			}
 		}
 		running = false;
@@ -146,7 +148,7 @@
 			</div>
 		</Step>
 
-		<Step n={3} title="Decrypt and save" state={stateOf(3)} complete={finished && jobs.some((j) => j.state === 'intact')}>
+		<Step n={3} title={unsaved ? 'Save your files' : 'Decrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.some((j) => j.state === 'intact')}>
 			{#if !jobs.length}
 				<p class="summary-line">Each file is checked as it is decrypted. If anything was changed, decryption stops.</p>
 				<div class="actions">
@@ -160,7 +162,7 @@
 					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} />{/each}
 				</ul>
 				{#if finished}
-					{#if jobs.every((j) => j.state === 'intact' && j.seal)}
+					{#if !unsaved && jobs.every((j) => j.state === 'intact' && j.seal)}
 						<p class="notice compare"><Icon name="check" size={18} />Every seal is intact. If the seal numbers match the sender's, you have exactly the files they sent.</p>
 					{/if}
 					<ResultActions bind:jobs moreLabel="Decrypt more files" onrestart={startOver} />

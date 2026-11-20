@@ -150,7 +150,7 @@ test('memory-held results are guarded until saved', async ({ browser }) => {
 	const downloads: string[] = [];
 	page.on('download', (d) => downloads.push(d.suggestedFilename()));
 	await page.getByRole('button', { name: 'Save all' }).click();
-	await expect(page.locator('.seal-list .saved')).toHaveCount(2);
+	await expect(page.locator('.seal-list').getByText('Saved to your downloads')).toHaveCount(2);
 	await expect.poll(() => downloads.sort()).toEqual(['a.txt.lockbox', 'b.txt.lockbox']);
 	await expect(page.getByText('not saved yet')).toHaveCount(0);
 

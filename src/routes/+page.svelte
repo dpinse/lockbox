@@ -13,7 +13,7 @@
 	import type { EncryptSecret } from '#lib/lockbox/format.ts';
 	import { keyFromFragment } from '#lib/lockbox/keys.ts';
 	import { MIN_PASSWORD_LENGTH } from '#lib/password.ts';
-	import { errorMessage, today } from '#lib/messages.ts';
+	import { failureMessage, streaming, today } from '#lib/messages.ts';
 	import { sealPulse } from '#lib/seal.svelte.ts';
 
 	let step = $state<1 | 2 | 3>(1);
@@ -40,6 +40,7 @@
 	const willBundle = $derived(bundle && files.length > 1);
 	const secretOk = $derived(mode === 'password' ? password.length >= MIN_PASSWORD_LENGTH : !!senderPrivate && !!recipientPublic);
 	const finished = $derived(jobs.length > 0 && !running);
+	const unsaved = $derived(jobs.some((j) => j.saveUrl && !j.saved));
 	const filesSummary = $derived(`${files.length} ${files.length === 1 ? 'file' : 'files'}${willBundle ? ', bundled' : ''}`);
 
 	async function encrypt() {
@@ -50,6 +51,7 @@
 			? [{ files: [...files], name: `lockbox-${today()}.zip.lockbox`, total: files.reduce((n, f) => n + f.size, 0) }]
 			: files.map((f) => ({ files: [f], name: `${f.name}.lockbox`, total: f.size }));
 
+		const streamed = streaming();
 		running = true;
 		jobs = outputs.map((o) => ({ name: o.name, seal: '', state: 'waiting', done: 0, total: o.total }));
 		let sealedAny = false;
@@ -62,11 +64,11 @@
 				});
 				jobs[i].state = 'sealed';
 				jobs[i].saveUrl = saveUrl;
-				jobs[i].message = saveUrl ? 'Ready. Click Save to keep it.' : 'Saved to your downloads';
+				jobs[i].message = saveUrl ? 'Encrypted, not saved yet' : 'Saved to your downloads';
 				sealedAny = true;
 			} catch (err) {
 				jobs[i].state = 'failed';
-				jobs[i].message = errorMessage[err instanceof JobError ? err.code : 'unknown'];
+				jobs[i].message = failureMessage(err instanceof JobError ? err.code : 'unknown', streamed);
 			}
 		}
 		running = false;
@@ -133,7 +135,7 @@
 			</div>
 		</Step>
 
-		<Step n={3} title="Encrypt and save" state={stateOf(3)} complete={finished && jobs.some((j) => j.state === 'sealed')}>
+		<Step n={3} title={unsaved ? 'Save your files' : 'Encrypt and save'} state={stateOf(3)} complete={finished && !unsaved && jobs.some((j) => j.state === 'sealed')}>
 			{#if !jobs.length}
 				<p class="summary-line">
 					{willBundle

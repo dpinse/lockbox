@@ -1,5 +1,6 @@
 <script lang="ts" module>
-	export type SealState = 'waiting' | 'working' | 'sealed' | 'intact' | 'torn' | 'failed';
+	// locked: the first chunk would not open, so a wrong password or key and tampering look the same.
+	export type SealState = 'waiting' | 'working' | 'sealed' | 'intact' | 'torn' | 'locked' | 'failed';
 	export type SealJob = {
 		name: string;
 		seal: string;
@@ -38,6 +39,7 @@
 			sealed: 'Sealed',
 			intact: 'Seal intact',
 			torn: 'Seal broken',
+			locked: "Couldn't open",
 			failed: 'Not saved'
 		}[job.state]
 	);
@@ -51,23 +53,24 @@
 	</div>
 	<div class="info">
 		<span class="name">{#each job.name.split(/(?<=[.\-_])/) as part, i (i)}{part}<wbr />{/each}</span>
-		{#if message}<span class="msg">{message}</span>{/if}
+		{#if message}
+			<span class="msg">
+				{message}{#if job.saveUrl && job.saved}
+					· <a class="again" href={job.saveUrl} download={job.name}>Save again<span class="visually-hidden"> {job.name}</span></a>{/if}
+			</span>
+		{/if}
 		{#if job.seal}<span class="visually-hidden">Seal number {job.seal}.</span>{/if}
 	</div>
-	{#if job.saveUrl && !job.saved}
-		<a class="btn btn-primary save" href={job.saveUrl} download={job.name} onclick={onsave}><Icon name="download" size={16} />Save<span class="visually-hidden"> {job.name}</span></a>
-	{:else if job.saveUrl}
-		<span class="status saved">
-			<Icon name="check" size={16} />Saved
-			<a class="again" href={job.saveUrl} download={job.name}>Save again<span class="visually-hidden"> {job.name}</span></a>
+	<div class="end">
+		<span class="status">
+			{#if job.state === 'sealed' || job.state === 'intact'}<Icon name="check" size={16} />{/if}
+			{#if job.state === 'torn' || job.state === 'locked' || job.state === 'failed'}<Icon name="alert" size={16} />{/if}
+			{label}
 		</span>
-	{:else}
-	<span class="status">
-		{#if job.state === 'sealed' || job.state === 'intact'}<Icon name="check" size={16} />{/if}
-		{#if job.state === 'torn' || job.state === 'failed'}<Icon name="alert" size={16} />{/if}
-		{label}
-	</span>
-	{/if}
+		{#if job.saveUrl && !job.saved}
+			<a class="btn btn-primary save" href={job.saveUrl} download={job.name} onclick={onsave}><Icon name="download" size={16} />Save<span class="visually-hidden"> {job.name}</span></a>
+		{/if}
+	</div>
 	{#if job.state === 'working'}<span class="bar" style:width="{pct}%"></span>{/if}
 </li>
 
@@ -109,6 +112,7 @@
 	/* Working or waiting: the seal is drawn but not yet applied. */
 	[data-state='waiting'] .seal,
 	[data-state='working'] .seal,
+	[data-state='locked'] .seal,
 	[data-state='failed'] .seal {
 		background: transparent;
 		color: var(--blue-text);
@@ -116,7 +120,8 @@
 		box-shadow: inset 0 0 0 1.5px var(--blue-soft);
 		animation: none;
 	}
-	[data-state='failed'] .seal {
+	[data-state='failed'] .seal,
+	[data-state='locked'] .seal {
 		color: var(--ink-3);
 	}
 	[data-state='torn'] .seal {
@@ -150,6 +155,7 @@
 		color: var(--ink-2);
 	}
 	[data-state='torn'] .msg,
+	[data-state='locked'] .msg,
 	[data-state='failed'] .msg {
 		color: var(--red);
 	}
@@ -169,6 +175,7 @@
 		color: var(--blue-text);
 	}
 	[data-state='torn'] .status,
+	[data-state='locked'] .status,
 	[data-state='failed'] .status {
 		color: var(--red);
 	}
@@ -178,11 +185,19 @@
 		font-size: 14px;
 		text-decoration: none;
 	}
-	.saved {
-		color: var(--blue-text);
+	.end {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding-right: 12px;
+	}
+	.end .status {
+		padding-right: 4px;
+	}
+	.end .save {
+		margin-right: 0;
 	}
 	.again {
-		margin-left: 8px;
 		font-weight: 500;
 		color: var(--ink-2);
 	}
@@ -222,6 +237,7 @@
 		}
 		[data-state='waiting'] .seal,
 		[data-state='working'] .seal,
+		[data-state='locked'] .seal,
 		[data-state='failed'] .seal {
 			border-right: 0;
 			border-bottom: 2px dashed var(--line-strong);
@@ -235,11 +251,12 @@
 		.name {
 			white-space: normal;
 		}
-		.status {
+		.end {
+			justify-content: space-between;
 			padding: 0 16px 12px;
 		}
-		.save {
-			margin: 0 16px 12px;
+		.end .status {
+			padding: 0;
 		}
 	}
 </style>
