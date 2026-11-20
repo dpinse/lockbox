@@ -11,9 +11,9 @@ variable "region" {
 }
 
 variable "github_repo" {
-  description = "owner/name of the GitHub repository allowed to deploy."
+  description = "Repository as it appears in GitHub's OIDC subject: owner@ownerId/name@repoId (check CloudTrail AssumeRoleWithWebIdentity if unsure)."
   type        = string
-  default     = "dpinse/lockbox"
+  default     = "dpinse@17935575/lockbox@1464953078"
 }
 
 variable "github_environment" {
