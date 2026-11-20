@@ -49,6 +49,17 @@ Then in GitHub, Settings → Secrets and variables → Actions → Variables, ad
 | `CLOUDFRONT_DISTRIBUTION_ID` | `terraform output -raw cloudfront_distribution_id` |
 | `AWS_DEPLOY_ROLE_ARN` | `terraform output -raw deploy_role_arn` |
 
+### Custom domain (DNS in Cloudflare or elsewhere)
+
+Set `domain_name = "lockbox.example.com"` in `terraform.tfvars`, then:
+
+1. `terraform apply -target=aws_acm_certificate.site` creates the TLS certificate (in us-east-1, as CloudFront requires).
+2. `terraform output certificate_validation_record`: add that CNAME in Cloudflare.
+3. `terraform apply` waits for the certificate to be issued (usually minutes), then attaches the domain to CloudFront.
+4. `terraform output site_dns_record`: add that CNAME in Cloudflare (a bare domain works too; Cloudflare flattens it).
+
+Set both records to **DNS only** (grey cloud). Proxying through Cloudflare would put a second CDN, and a second TLS termination, in front of a privacy tool, and can break certificate validation. Share links pick up the new domain automatically.
+
 Every push to `main` then tests, builds and deploys. The site is at `terraform output -raw site_url`.
 
 ## License

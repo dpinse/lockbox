@@ -51,6 +51,12 @@ variable "budget_limit_usd" {
   default     = "5"
 }
 
+variable "domain_name" {
+  description = "Optional custom domain, e.g. lockbox.example.com. Empty uses the *.cloudfront.net address."
+  type        = string
+  default     = ""
+}
+
 variable "price_class" {
   description = "CloudFront edge locations: PriceClass_100 (NA/EU, cheapest), _200, or _All."
   type        = string

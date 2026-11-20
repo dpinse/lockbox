@@ -19,6 +19,40 @@ provider "aws" {
   }
 }
 
+# CloudFront only accepts certificates issued in us-east-1, whatever region the bucket is in.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+  default_tags {
+    tags = { Project = var.project }
+  }
+}
+
+locals {
+  custom_domain = var.domain_name != ""
+}
+
+# ---------- Custom domain (optional; DNS stays wherever it is, e.g. Cloudflare) ----------
+
+resource "aws_acm_certificate" "site" {
+  count             = local.custom_domain ? 1 : 0
+  provider          = aws.us_east_1
+  domain_name       = var.domain_name
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Waits until the validation CNAME (see the dns_records output) exists in your DNS.
+resource "aws_acm_certificate_validation" "site" {
+  count                   = local.custom_domain ? 1 : 0
+  provider                = aws.us_east_1
+  certificate_arn         = aws_acm_certificate.site[0].arn
+  validation_record_fqdns = [for o in aws_acm_certificate.site[0].domain_validation_options : o.resource_record_name]
+}
+
 data "aws_caller_identity" "current" {}
 
 # ---------- Storage ----------
@@ -140,6 +174,7 @@ resource "aws_cloudfront_distribution" "site" {
   price_class         = var.price_class
   http_version        = "http2and3"
   is_ipv6_enabled     = true
+  aliases             = local.custom_domain ? [var.domain_name] : []
 
   origin {
     origin_id                = "s3-site"
@@ -169,7 +204,11 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = !local.custom_domain
+    acm_certificate_arn            = local.custom_domain ? aws_acm_certificate_validation.site[0].certificate_arn : null
+    ssl_support_method             = local.custom_domain ? "sni-only" : null
+    # The default *.cloudfront.net certificate only allows "TLSv1"; a custom certificate can require TLS 1.2+.
+    minimum_protocol_version = local.custom_domain ? "TLSv1.2_2021" : "TLSv1"
   }
 }
 

@@ -6,5 +6,8 @@ budget_email = "you@example.com"
 # Or skip the budget entirely and rely on your account's existing alerts:
 # create_budget = false
 
+# Custom domain (DNS can stay in Cloudflare). See README → "Custom domain" for the two-step apply.
+# domain_name = "lockbox.example.com"
+
 # Already deploying other repos from GitHub Actions? Your account likely has GitHub's OIDC provider:
 # create_github_oidc_provider = false
