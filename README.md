@@ -36,6 +36,8 @@ terraform init
 terraform apply
 ```
 
+Sharing an AWS account with other projects? Every lockbox resource is tagged `Project=lockbox`, and the budget alert counts only that tag, so other workloads won't trip it. Activate `Project` under Billing → Cost allocation tags for the filter to take effect, or set `create_budget = false`. If you already deploy from GitHub Actions, set `create_github_oidc_provider = false` (an account can hold only one GitHub OIDC provider).
+
 Then in GitHub, Settings → Secrets and variables → Actions → Variables, add:
 
 | Variable | Value |

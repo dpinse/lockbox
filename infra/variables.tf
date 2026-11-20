@@ -22,9 +22,21 @@ variable "create_github_oidc_provider" {
   default     = true
 }
 
+variable "create_budget" {
+  description = "Create a monthly budget alert scoped to this project's tagged resources."
+  type        = bool
+  default     = true
+}
+
 variable "budget_email" {
-  description = "Where budget alerts are sent."
+  description = "Where budget alerts are sent (unused when create_budget is false)."
   type        = string
+  default     = ""
+
+  validation {
+    condition     = !var.create_budget || length(var.budget_email) > 3
+    error_message = "Set budget_email, or set create_budget = false."
+  }
 }
 
 variable "budget_limit_usd" {

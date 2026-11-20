@@ -230,12 +230,21 @@ resource "aws_iam_role_policy" "deploy" {
 
 # ---------- Cost guardrail ----------
 
+# Scoped to resources tagged Project=<project> (every resource here gets it via default_tags), so other
+# workloads in a shared account don't trip lockbox's alerts. AWS applies the filter only once "Project"
+# is an active cost allocation tag: Billing console -> Cost allocation tags -> activate "Project".
 resource "aws_budgets_budget" "monthly" {
+  count        = var.create_budget ? 1 : 0
   name         = "${var.project}-monthly"
   budget_type  = "COST"
   limit_amount = var.budget_limit_usd
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
+
+  cost_filter {
+    name   = "TagKeyValue"
+    values = ["user:Project$${var.project}"]
+  }
 
   notification {
     comparison_operator        = "GREATER_THAN"
