@@ -32,7 +32,7 @@
 	let { job, onsave, quietSave = false }: { job: SealJob; onsave?: () => void; quietSave?: boolean } = $props();
 	const pending = $derived(!!job.saveUrl && !job.saved);
 
-	const message = $derived(job.saveUrl && job.saved ? 'Saved to your downloads' : job.message);
+	const message = $derived(job.saveUrl && job.saved ? 'Download started' : job.message);
 	const pct = $derived(job.total ? Math.min(100, Math.round((job.done / job.total) * 100)) : 0);
 	const label = $derived(
 		{
@@ -57,8 +57,7 @@
 		<span class="name">{#each job.name.split(/(?<=[.\-_])/) as part, i (i)}{part}<wbr />{/each}</span>
 		{#if message}
 			<span class="msg">
-				{message}{#if job.saveUrl && job.saved}
-					· <a class="again" href={job.saveUrl} download={job.name}>Save again<span class="visually-hidden"> {job.name}</span></a>{/if}
+				{message}{#if job.saveUrl && job.saved}{' · '}<a class="again" href={job.saveUrl} download={job.name}>Save again<span class="visually-hidden"> {job.name}</span></a>{/if}
 			</span>
 		{/if}
 		{#if job.seal}<span class="visually-hidden">Seal number {job.seal}.</span>{/if}

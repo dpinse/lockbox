@@ -110,6 +110,12 @@
 	h2:focus:not(:focus-visible) {
 		box-shadow: none;
 	}
+	/* A lighter ring than controls get: the heading is a landing point, not something to press. */
+	h2:focus-visible {
+		box-shadow: none;
+		outline: 2px solid var(--blue);
+		outline-offset: 3px;
+	}
 	h2 {
 		border-radius: 5px;
 		font-size: 16px;

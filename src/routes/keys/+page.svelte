@@ -9,6 +9,7 @@
 	let copied = $state('');
 	let moreShare = $state(false);
 	let savedPrivate = $state(false);
+	let savedBy = $state<'download' | 'copy' | null>(null);
 	let confirmingNew = $state(false);
 	let publicHeading = $state<HTMLHeadingElement>();
 
@@ -36,6 +37,7 @@
 		};
 		moreShare = false;
 		savedPrivate = false;
+		savedBy = null;
 		confirmingNew = false;
 		await tick();
 		publicHeading?.focus(); // the button that was focused is gone or replaced
@@ -43,7 +45,7 @@
 
 	async function copy(what: string, text: string) {
 		await navigator.clipboard.writeText(text);
-		if (what === 'private') savedPrivate = true;
+		if (what === 'private') ((savedPrivate = true), (savedBy ??= 'copy'));
 		copied = what;
 		setTimeout(() => (copied = ''), 1600);
 	}
@@ -54,6 +56,7 @@
 		Object.assign(document.createElement('a'), { href: url, download: 'lockbox-private-key.txt' }).click();
 		setTimeout(() => URL.revokeObjectURL(url), 10_000);
 		savedPrivate = true;
+		savedBy = 'download';
 	}
 </script>
 
@@ -102,7 +105,7 @@
 				<span class="tag never">Never share</span>
 			</div>
 			{#if savedPrivate}
-				<p class="notice"><Icon name="check" size={18} /><span>Saved. Keep it somewhere safe: you need it to open files sent to you. <a href="/">Now encrypt a file</a></span></p>
+				<p class="notice"><Icon name="check" size={18} /><span>{savedBy === 'copy' ? 'Copied. Paste it somewhere lasting, like a password manager: the clipboard is temporary.' : 'Downloaded. Keep the file somewhere safe: you need it to open files sent to you.'} <a href="/">Now encrypt a file</a></span></p>
 			{:else}
 				<p class="notice danger"><Icon name="alert" size={18} />Save it now. If you lose it, files sent to you can't be opened, and lockbox can't recover it.</p>
 			{/if}

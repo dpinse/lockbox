@@ -45,7 +45,7 @@
 		<p class="title"><Icon name="key" size={18} /><strong>Your new key pair</strong></p>
 		<p class="hint">Your private key is filled in above. Save it: you need it to open files people send you, and lockbox can't recover it.</p>
 		<div class="row">
-			<button class="btn btn-primary" type="button" onclick={download}><Icon name={saved ? 'check' : 'download'} size={18} />{saved ? 'Saved' : 'Download private key'}</button>
+			<button class="btn" type="button" onclick={download}><Icon name={saved ? 'check' : 'download'} size={18} />{saved ? 'Saved' : 'Download private key'}</button>
 			<button class="btn" type="button" onclick={() => copy('private', pair!.privateText)}><Icon name={copied === 'private' ? 'check' : 'copy'} size={18} />{copied === 'private' ? 'Copied' : 'Copy private key'}</button>
 		</div>
 		<p class="hint">Send your <strong>public key</strong> to the recipient with the file: they need it to open it.</p>

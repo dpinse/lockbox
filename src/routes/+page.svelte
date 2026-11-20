@@ -195,7 +195,7 @@
 								Encrypting on this device.
 							{:else}
 								<strong>{sealedCount === 1 ? '1 file sealed' : `${sealedCount} files sealed`}</strong>
-								{unsaved ? 'Save each one below to keep it.' : 'Only the right password or key can open it now.'}
+								{unsaved ? (sealedCount === 1 ? 'Save it below to keep it.' : 'Save each one below to keep it.') : `Only the right password or key can open ${sealedCount === 1 ? 'it' : 'them'} now.`}
 							{/if}
 						</p>
 					</div>
