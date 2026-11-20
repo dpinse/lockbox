@@ -196,8 +196,9 @@ resource "aws_iam_role" "deploy" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          # Only workflow runs on the main branch of this one repository.
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main"
+          # Jobs that declare `environment:` get this subject instead of a branch ref. Only this repository's
+          # deploy environment qualifies; restrict that environment to main in GitHub settings.
+          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:environment:${var.github_environment}"
         }
       }
     }]

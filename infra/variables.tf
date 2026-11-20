@@ -16,6 +16,12 @@ variable "github_repo" {
   default     = "dpinse/lockbox"
 }
 
+variable "github_environment" {
+  description = "GitHub Actions environment the deploy job runs in (must match `environment:` in ci.yml)."
+  type        = string
+  default     = "production"
+}
+
 variable "create_github_oidc_provider" {
   description = "Set false if this AWS account already has the token.actions.githubusercontent.com OIDC provider."
   type        = bool
