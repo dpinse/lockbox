@@ -5,8 +5,13 @@ const PASSWORD = 'correct horse battery staple';
 const original = Buffer.from('hello from lockbox\n'.repeat(10_000)); // ~190 KB, several chunks
 type Upload = { name: string; buffer: Buffer };
 
+/** Clicks `click`, then takes the file either from the streamed download or, on the in-memory path, from Save. */
 async function download(page: Page, click: () => Promise<void>) {
-	const [d] = await Promise.all([page.waitForEvent('download'), click()]);
+	const streamed = page.waitForEvent('download', { timeout: 30_000 });
+	await click();
+	const save = page.getByRole('link', { name: /^Save/ }).first();
+	const first = await Promise.race([streamed.then(() => 'download' as const), save.waitFor().then(() => 'save' as const)]);
+	const d = first === 'download' ? await streamed : (await Promise.all([page.waitForEvent('download'), save.click()]))[0];
 	return { name: d.suggestedFilename(), buffer: await readFile(await d.path()) };
 }
 
@@ -47,13 +52,13 @@ for (const via of ['in-memory fallback', 'service worker'] as const) {
 		const sealed = await download(page, () => encryptButton(page).click());
 		expect(sealed.name).toBe('notes.txt.lockbox');
 		expect(sealed.buffer.subarray(0, 7).toString()).toBe('LOCKBOX');
-		await expect(page.getByText('Sealed', { exact: true })).toBeVisible();
+		await expect(page.locator('.seal-list li[data-state="sealed"]')).toBeVisible();
 
 		await decryptWithPassword(page, sealed, PASSWORD);
 		const opened = await download(page, () => decryptButton(page).click());
 		expect(opened.name).toBe('notes.txt');
 		expect(opened.buffer.equals(original)).toBe(true);
-		await expect(page.getByText('Seal intact')).toBeVisible();
+		await expect(page.locator('.seal-list li[data-state="intact"]')).toBeVisible();
 		await context.close();
 	});
 }

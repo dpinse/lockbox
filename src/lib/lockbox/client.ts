@@ -22,7 +22,8 @@ function getWorker() {
 	return worker;
 }
 
-type Sink = { port: MessagePort; start: () => void; cleanup: () => void };
+/** `saveUrl` resolves to a blob URL the user must save by clicking (memory sink only). */
+type Sink = { port: MessagePort; start: () => void; cleanup: () => void; saveUrl?: Promise<string> };
 
 /** Streams through the service worker when it controls the page; otherwise collects in memory. */
 async function openSink(filename: string): Promise<Sink> {
@@ -56,41 +57,51 @@ async function openSink(filename: string): Promise<Sink> {
 			};
 		}
 	}
-	return memorySink(filename);
+	return memorySink();
 }
 
-// shortcut: holds the whole output in memory (≈1 GB limit); only used when no service worker controls the page.
-function memorySink(filename: string): Sink {
+// shortcut: holds the whole output in memory (≈1 GB limit); only used when no service worker controls the page,
+// e.g. Firefox private windows. The user saves it with a click: browsers drop scripted downloads that start
+// long after the user's own click, and Argon2id alone takes longer than that.
+function memorySink(): Sink {
 	const channel = new MessageChannel();
 	const parts: Uint8Array[] = [];
 	const request = (r: SinkRequest) => channel.port1.postMessage(r);
+	let resolveUrl: (url: string) => void;
+	const saveUrl = new Promise<string>((r) => (resolveUrl = r));
 	channel.port1.onmessage = (e: MessageEvent<SinkMessage>) => {
 		const m = e.data;
 		if (m.type === 'chunk') {
 			parts.push(m.data);
 			request('pull');
 		} else if (m.type === 'end') {
-			const url = URL.createObjectURL(new Blob(parts as BlobPart[]));
-			const a = Object.assign(document.createElement('a'), { href: url, download: filename });
-			a.click();
-			setTimeout(() => URL.revokeObjectURL(url), 60_000);
+			// Binary type so the browser saves e.g. a decrypted .txt instead of opening it.
+			resolveUrl(URL.createObjectURL(new Blob(parts as BlobPart[], { type: 'application/octet-stream' })));
+			parts.length = 0;
 		} else {
 			parts.length = 0; // failed: never save partial output
 		}
 	};
-	return { port: channel.port2, start: () => request('pull'), cleanup: () => channel.port1.close() };
+	return { port: channel.port2, start: () => request('pull'), cleanup: () => channel.port1.close(), saveUrl };
 }
 
 type JobInput = Job extends infer J ? (J extends Job ? Omit<J, 'type' | 'id'> : never) : never;
 
 type JobEvents = { onProgress?: (bytes: number) => void; onSeal?: (seal: string) => void };
 
-/** Runs one job, saving the output as `filename`. Rejects with JobError. */
-export function runJob(input: JobInput, filename: string, { onProgress, onSeal }: JobEvents = {}): Promise<void> {
+/**
+ * Runs one job, saving the output as `filename`. Rejects with JobError.
+ * Resolves with `saveUrl` when the output could not stream to disk and the user must click to save it.
+ */
+export function runJob(
+	input: JobInput,
+	filename: string,
+	{ onProgress, onSeal }: JobEvents = {}
+): Promise<{ saveUrl?: string }> {
 	const id = nextId++;
 	const w = getWorker();
 	let sink: Sink | null = null;
-	return new Promise<void>((resolve, reject) => {
+	return new Promise((resolve, reject) => {
 		listeners.set(id, async (m) => {
 			if (m.type === 'ready') {
 				if (m.seal) onSeal?.(m.seal);
@@ -101,8 +112,10 @@ export function runJob(input: JobInput, filename: string, { onProgress, onSeal }
 				onProgress?.(m.bytes);
 			} else {
 				listeners.delete(id);
+				// 'done' can arrive before the sink's 'end', so wait for the blob before resolving.
+				const saveUrl = m.type === 'done' ? await sink?.saveUrl : undefined;
 				sink?.cleanup();
-				if (m.type === 'done') resolve();
+				if (m.type === 'done') resolve({ saveUrl });
 				else reject(new JobError(m.type === 'error' ? m.code : 'unknown'));
 			}
 		});

@@ -1,6 +1,15 @@
 <script lang="ts" module>
 	export type SealState = 'waiting' | 'working' | 'sealed' | 'intact' | 'torn' | 'failed';
-	export type SealJob = { name: string; seal: string; state: SealState; done: number; total: number; message?: string };
+	export type SealJob = {
+		name: string;
+		seal: string;
+		state: SealState;
+		done: number;
+		total: number;
+		message?: string;
+		/** Set when the output is held in memory and the user must click to save it. */
+		saveUrl?: string;
+	};
 </script>
 
 <script lang="ts">
@@ -32,11 +41,15 @@
 		{#if job.message}<span class="msg">{job.message}</span>{/if}
 		{#if job.seal}<span class="visually-hidden">Seal number {job.seal}.</span>{/if}
 	</div>
+	{#if job.saveUrl}
+		<a class="btn btn-primary save" href={job.saveUrl} download={job.name}><Icon name="download" size={16} />Save<span class="visually-hidden"> {job.name}</span></a>
+	{:else}
 	<span class="status">
 		{#if job.state === 'sealed' || job.state === 'intact'}<Icon name="check" size={16} />{/if}
 		{#if job.state === 'torn' || job.state === 'failed'}<Icon name="alert" size={16} />{/if}
 		{label}
 	</span>
+	{/if}
 	{#if job.state === 'working'}<span class="bar" style:width="{pct}%"></span>{/if}
 </li>
 
@@ -141,6 +154,11 @@
 	[data-state='failed'] .status {
 		color: var(--red);
 	}
+	.save {
+		height: 36px;
+		margin-right: 12px;
+		font-size: 14px;
+	}
 	.bar {
 		position: absolute;
 		left: 0;
@@ -189,6 +207,9 @@
 		}
 		.status {
 			padding: 0 16px 12px;
+		}
+		.save {
+			margin: 0 16px 12px;
 		}
 	}
 </style>

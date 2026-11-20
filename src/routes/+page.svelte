@@ -55,12 +55,13 @@
 		for (const [i, o] of outputs.entries()) {
 			jobs[i].state = 'working';
 			try {
-				await runJob({ op: 'encrypt', files: o.files, bundle: willBundle, secret }, o.name, {
+				const { saveUrl } = await runJob({ op: 'encrypt', files: o.files, bundle: willBundle, secret }, o.name, {
 					onProgress: (b) => (jobs[i].done = b),
 					onSeal: (s) => (jobs[i].seal = s)
 				});
 				jobs[i].state = 'sealed';
-				jobs[i].message = 'Saved to your downloads';
+				jobs[i].saveUrl = saveUrl;
+				jobs[i].message = saveUrl ? 'Ready. Click Save to keep it.' : 'Saved to your downloads';
 				sealedAny = true;
 			} catch (err) {
 				jobs[i].state = 'failed';
@@ -78,6 +79,7 @@
 	}
 
 	function startOver() {
+		for (const j of jobs) if (j.saveUrl) URL.revokeObjectURL(j.saveUrl); // free memory-held output
 		files = [];
 		bundle = false;
 		password = '';

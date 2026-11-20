@@ -151,6 +151,9 @@ a {
 	font-variant-numeric: tabular-nums;
 	letter-spacing: 0;
 }
+.app {
+	display: contents;
+}
 .visually-hidden {
 	position: absolute;
 	width: 1px;

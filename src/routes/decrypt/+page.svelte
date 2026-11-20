@@ -67,11 +67,12 @@
 		for (const [i, file] of files.entries()) {
 			jobs[i].state = 'working';
 			try {
-				await runJob({ op: 'decrypt', files: [file], bundle: false, secret }, jobs[i].name, {
+				const { saveUrl } = await runJob({ op: 'decrypt', files: [file], bundle: false, secret }, jobs[i].name, {
 					onProgress: (b) => (jobs[i].done = b)
 				});
 				jobs[i].state = 'intact';
-				jobs[i].message = 'Saved to your downloads';
+				jobs[i].saveUrl = saveUrl;
+				jobs[i].message = saveUrl ? 'Ready. Click Save to keep it.' : 'Saved to your downloads';
 			} catch (err) {
 				const code = err instanceof JobError ? err.code : 'unknown';
 				if (code === 'wrong-secret') {
@@ -89,6 +90,7 @@
 	}
 
 	function startOver() {
+		for (const j of jobs) if (j.saveUrl) URL.revokeObjectURL(j.saveUrl); // free memory-held output
 		files = [];
 		password = '';
 		jobs = [];
