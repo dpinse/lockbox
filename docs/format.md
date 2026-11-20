@@ -119,10 +119,14 @@ Parsers reject text with the wrong prefix, so pasting a Private key into a Publi
 
 A Public key is shared as `https://<host>/#to=lockbox-pub-<base64url>`. The key sits in the URL fragment, which browsers never send to the server.
 
+### Seal number
+
+The app labels each Lockbox file with its seal number: the first 4 bytes of the stream header as uppercase hex, split in two (`4F2A·91C0`). It is public, random per file, and lets a Sender and Recipient confirm they hold the same file. It is not a checksum and proves nothing about integrity; decryption does that.
+
 ## File names
 
 - Encrypting `<name>` produces `<name>.lockbox`. The Original file name is not stored inside.
-- Decrypting `<name>.lockbox` produces `<name>`. Without the suffix, the app asks for a name.
+- Decrypting `<name>.lockbox` produces `<name>`. Without the suffix, the output is named `<name>.decrypted`.
 - A Bundle is an uncompressed (stored) zip of the Original files, encrypted as one ordinary Lockbox file named `lockbox-YYYY-MM-DD.zip.lockbox`. The format does not distinguish Bundles; it decrypts to the `.zip`.
 
 ## Versioning

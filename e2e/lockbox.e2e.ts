@@ -3,23 +3,37 @@ import { readFile } from 'node:fs/promises';
 
 const PASSWORD = 'correct horse battery staple';
 const original = Buffer.from('hello from lockbox\n'.repeat(10_000)); // ~190 KB, several chunks
+type Upload = { name: string; buffer: Buffer };
 
 async function download(page: Page, click: () => Promise<void>) {
 	const [d] = await Promise.all([page.waitForEvent('download'), click()]);
-	return { name: d.suggestedFilename(), bytes: await readFile(await d.path()) };
+	return { name: d.suggestedFilename(), buffer: await readFile(await d.path()) };
 }
 
-async function encryptWithPassword(page: Page, files: { name: string; buffer: Buffer }[]) {
+const choose = (page: Page, files: Upload[]) =>
+	page.getByLabel('Browse files').setInputFiles(files.map((f) => ({ ...f, mimeType: 'application/octet-stream' })));
+const next = (page: Page) => page.getByRole('button', { name: 'Next' }).click();
+const passwordBox = (page: Page) => page.getByRole('textbox', { name: 'Password' });
+
+async function encryptWithPassword(page: Page, files: Upload[], { bundle = false } = {}) {
 	await page.goto('/');
-	await page.getByLabel('Files').setInputFiles(files.map((f) => ({ ...f, mimeType: 'application/octet-stream' })));
-	await page.getByRole('textbox', { name: 'Password' }).fill(PASSWORD);
+	await choose(page, files);
+	if (bundle) await page.getByLabel('Bundle into one lockbox file').check();
+	await next(page);
+	await passwordBox(page).fill(PASSWORD);
+	await next(page);
 }
 
-async function decrypt(page: Page, file: { name: string; bytes: Buffer }, password: string) {
+async function decryptWithPassword(page: Page, file: Upload, password: string) {
 	await page.goto('/decrypt');
-	await page.getByLabel('Lockbox files').setInputFiles({ name: file.name, mimeType: 'application/octet-stream', buffer: file.bytes });
-	await page.getByRole('textbox', { name: 'Password' }).fill(password);
+	await choose(page, [file]);
+	await next(page);
+	await passwordBox(page).fill(password);
+	await next(page);
 }
+
+const encryptButton = (page: Page) => page.getByRole('button', { name: /^Encrypt (file|bundle|\d+ files)$/ });
+const decryptButton = (page: Page) => page.getByRole('button', { name: /^Decrypt (file|\d+ files)$/ });
 
 for (const via of ['in-memory fallback', 'service worker'] as const) {
 	test(`password round trip via ${via}`, async ({ browser }) => {
@@ -28,66 +42,87 @@ for (const via of ['in-memory fallback', 'service worker'] as const) {
 		await page.goto('/');
 		if (via === 'service worker') await page.waitForFunction(() => navigator.serviceWorker.ready);
 		expect(await page.evaluate(() => !!navigator.serviceWorker?.controller)).toBe(via === 'service worker');
-		await encryptWithPassword(page, [{ name: 'notes.txt', buffer: original }]);
-		const sealed = await download(page, () => page.getByRole('button', { name: 'Encrypt' }).click());
-		expect(sealed.name).toBe('notes.txt.lockbox');
-		expect(sealed.bytes.subarray(0, 7).toString()).toBe('LOCKBOX');
 
-		await decrypt(page, sealed, PASSWORD);
-		const opened = await download(page, () => page.getByRole('button', { name: 'Decrypt' }).click());
+		await encryptWithPassword(page, [{ name: 'notes.txt', buffer: original }]);
+		const sealed = await download(page, () => encryptButton(page).click());
+		expect(sealed.name).toBe('notes.txt.lockbox');
+		expect(sealed.buffer.subarray(0, 7).toString()).toBe('LOCKBOX');
+		await expect(page.getByText('Sealed', { exact: true })).toBeVisible();
+
+		await decryptWithPassword(page, sealed, PASSWORD);
+		const opened = await download(page, () => decryptButton(page).click());
 		expect(opened.name).toBe('notes.txt');
-		expect(opened.bytes.equals(original)).toBe(true);
+		expect(opened.buffer.equals(original)).toBe(true);
+		await expect(page.getByText('Seal intact')).toBeVisible();
 		await context.close();
 	});
 }
 
 test('wrong password shows an error and starts no download', async ({ page }) => {
 	await encryptWithPassword(page, [{ name: 'notes.txt', buffer: original }]);
-	const sealed = await download(page, () => page.getByRole('button', { name: 'Encrypt' }).click());
+	const sealed = await download(page, () => encryptButton(page).click());
 
-	await decrypt(page, sealed, 'not the password');
+	await decryptWithPassword(page, sealed, 'not the password');
 	let downloaded = false;
 	page.on('download', () => (downloaded = true));
-	await page.getByRole('button', { name: 'Decrypt' }).click();
+	await decryptButton(page).click();
 	await expect(page.getByText('Wrong password or key')).toBeVisible({ timeout: 15_000 });
 	expect(downloaded).toBe(false);
 });
 
+test('a tampered file shows a broken seal', async ({ page }) => {
+	await encryptWithPassword(page, [{ name: 'notes.txt', buffer: original }]);
+	const sealed = await download(page, () => encryptButton(page).click());
+	const tampered = Buffer.from(sealed.buffer);
+	tampered[tampered.length - 100] ^= 1; // inside the last chunk, after the first chunk verified
+
+	await decryptWithPassword(page, { name: sealed.name, buffer: tampered }, PASSWORD);
+	await decryptButton(page).click();
+	await expect(page.getByText('Seal broken')).toBeVisible({ timeout: 15_000 });
+});
+
 test('bundle produces one dated .zip.lockbox', async ({ page }) => {
-	await encryptWithPassword(page, [
-		{ name: 'a.txt', buffer: Buffer.from('a') },
-		{ name: 'b.txt', buffer: Buffer.from('b') }
-	]);
-	await page.getByLabel('Bundle into one Lockbox file').check();
-	const sealed = await download(page, () => page.getByRole('button', { name: 'Encrypt' }).click());
+	await encryptWithPassword(
+		page,
+		[
+			{ name: 'a.txt', buffer: Buffer.from('a') },
+			{ name: 'b.txt', buffer: Buffer.from('b') }
+		],
+		{ bundle: true }
+	);
+	const sealed = await download(page, () => encryptButton(page).click());
 	expect(sealed.name).toMatch(/^lockbox-\d{4}-\d{2}-\d{2}\.zip\.lockbox$/);
 
-	await decrypt(page, sealed, PASSWORD);
-	const zip = await download(page, () => page.getByRole('button', { name: 'Decrypt' }).click());
-	expect(zip.bytes.subarray(0, 2).toString()).toBe('PK');
+	await decryptWithPassword(page, sealed, PASSWORD);
+	const zip = await download(page, () => decryptButton(page).click());
+	expect(zip.buffer.subarray(0, 2).toString()).toBe('PK');
 });
 
 test('key mode round trip with generated keys', async ({ page }) => {
 	const keys = async () => {
 		await page.goto('/keys');
-		await page.getByRole('button', { name: /Generate/ }).click();
-		const codes = page.locator('code');
-		return { pub: await codes.nth(0).innerText(), priv: await codes.nth(2).innerText() };
+		await page.getByRole('button', { name: /Create a/ }).click();
+		const shown = page.locator('p.key');
+		return { pub: await shown.nth(0).innerText(), priv: await shown.nth(1).innerText() };
 	};
 	const alice = await keys();
 	const bob = await keys();
 
 	await page.goto('/');
-	await page.getByLabel('Files').setInputFiles({ name: 'secret.bin', mimeType: 'application/octet-stream', buffer: original });
-	await page.getByLabel('Key', { exact: true }).check();
-	await page.getByLabel('Your private key').fill(alice.priv);
-	await page.getByLabel("Recipient's public key").fill(bob.pub);
-	const sealed = await download(page, () => page.getByRole('button', { name: 'Encrypt' }).click());
+	await choose(page, [{ name: 'secret.bin', buffer: original }]);
+	await next(page);
+	await page.getByRole('radiogroup', { name: 'Encrypt with' }).getByText('Key', { exact: true }).click();
+	await page.getByRole('textbox', { name: 'Your private key' }).fill(alice.priv);
+	await page.getByRole('textbox', { name: "Recipient's public key" }).fill(bob.pub);
+	await next(page);
+	const sealed = await download(page, () => encryptButton(page).click());
 
 	await page.goto('/decrypt');
-	await page.getByLabel('Lockbox files').setInputFiles({ name: sealed.name, mimeType: 'application/octet-stream', buffer: sealed.bytes });
-	await page.getByLabel('Your private key').fill(bob.priv);
-	await page.getByLabel("Sender's public key").fill(alice.pub);
-	const opened = await download(page, () => page.getByRole('button', { name: 'Decrypt' }).click());
-	expect(opened.bytes.equals(original)).toBe(true);
+	await choose(page, [sealed]);
+	await next(page);
+	await page.getByRole('textbox', { name: 'Your private key' }).fill(bob.priv);
+	await page.getByRole('textbox', { name: "Sender's public key" }).fill(alice.pub);
+	await next(page);
+	const opened = await download(page, () => decryptButton(page).click());
+	expect(opened.buffer.equals(original)).toBe(true);
 });

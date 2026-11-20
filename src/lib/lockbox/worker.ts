@@ -1,6 +1,6 @@
 // Runs encryption off the main thread so Argon2id and large files never freeze the page.
 import { makeZip } from 'client-zip';
-import { LockboxError, decryptStream, encryptStream, ready } from './format';
+import { LockboxError, decryptStream, encryptStream, ready, sealNumber } from './format';
 import type { FromWorker, Job, SinkMessage, SinkRequest, ToWorker } from './protocol';
 
 const post = (m: FromWorker) => self.postMessage(m);
@@ -34,9 +34,11 @@ async function run(job: Job) {
 
 		// Read one chunk before asking for a download, so a wrong password fails here, not as a broken download.
 		let pending: ReadableStreamReadResult<Uint8Array> | null = await reader.read();
+		// Encrypt's first chunk is the whole Lockbox header; decrypt pages read the seal from the file themselves.
+		const seal = job.op === 'encrypt' && pending.value ? sealNumber(pending.value) : '';
 		const port = await new Promise<MessagePort>((resolve) => {
 			sinks.set(id, resolve);
-			post({ type: 'ready', id });
+			post({ type: 'ready', id, seal });
 		});
 		const send = (m: SinkMessage, transfer: Transferable[] = []) => port.postMessage(m, transfer);
 

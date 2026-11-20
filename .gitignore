@@ -25,3 +25,8 @@ vite.config.ts.timestamp-*
 # Playwright
 /test-results
 /playwright-report
+
+# Impeccable working material (keep design.json and surfaces/)
+/.impeccable/*
+!/.impeccable/design.json
+!/.impeccable/surfaces/

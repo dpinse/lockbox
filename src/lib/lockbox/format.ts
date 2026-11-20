@@ -237,3 +237,15 @@ export function decryptStream(secret: DecryptSecret): TransformStream<Uint8Array
 		}
 	});
 }
+
+/** Bytes from the start of a Lockbox file that are enough for `sealNumber`, whatever the mode. */
+export const SEAL_BYTES_NEEDED = PREAMBLE_BYTES + PASSWORD_PARAMS_BYTES + 4;
+
+/** Short public code for one Lockbox file: the first 4 bytes of its random stream header, e.g. "4F2A·91C0". */
+export function sealNumber(bytes: Uint8Array): string {
+	const start = fileHeaderLength(readMode(bytes));
+	const b = bytes.subarray(start, start + 4);
+	if (b.length < 4) throw new LockboxError('incomplete');
+	const hex = Array.from(b, (x) => x.toString(16).padStart(2, '0').toUpperCase()).join('');
+	return `${hex.slice(0, 4)}·${hex.slice(4)}`;
+}

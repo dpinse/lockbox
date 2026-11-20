@@ -14,6 +14,10 @@ _Avoid_: Encrypted file, ciphertext file, box
 A single Lockbox file holding several Original files packed together, which decrypts to one zip.
 _Avoid_: Archive, batch
 
+**Seal number**:
+A short public code identifying one Lockbox file, read from its header, so a Sender and Recipient can confirm they hold the same file.
+_Avoid_: File ID, checksum, fingerprint
+
 **Original file**:
 The user's file before encryption or after successful decryption.
 _Avoid_: Plaintext file, source file

@@ -8,7 +8,7 @@ export type Job =
 export type ToWorker = Job | { type: 'sink'; id: number; port: MessagePort };
 
 export type FromWorker =
-	| { type: 'ready'; id: number } // first output chunk produced: password/key is right, safe to start a download
+	| { type: 'ready'; id: number; seal: string } // first chunk produced: secret is right, safe to start a download
 	| { type: 'progress'; id: number; bytes: number }
 	| { type: 'done'; id: number }
 	| { type: 'cancelled'; id: number }

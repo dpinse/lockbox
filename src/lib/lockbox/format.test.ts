@@ -8,6 +8,7 @@ import {
 	decryptStream,
 	encryptStream,
 	readMode,
+	sealNumber,
 	ready,
 	type DecryptSecret,
 	type EncryptSecret
@@ -213,5 +214,23 @@ describe('key mode', () => {
 		const [sender, recipient] = [generateKeyPair(), generateKeyPair()];
 		const sealed = await encrypt({ senderPrivate: sender.privateKey, recipientPublic: recipient.publicKey }, bytes(10));
 		await expectCode(decrypt({ password: PASSWORD }, sealed), 'wrong-mode');
+	});
+});
+
+describe('seal number', () => {
+	it('reads the first 4 stream-header bytes in both modes', async () => {
+		const sealed = await encrypt({ password: PASSWORD, ...FAST }, bytes(10));
+		const hex = Buffer.from(sealed.subarray(33, 37)).toString('hex').toUpperCase();
+		expect(sealNumber(sealed)).toBe(`${hex.slice(0, 4)}·${hex.slice(4)}`);
+		const [s, r] = [generateKeyPair(), generateKeyPair()];
+		const keyed = await encrypt({ senderPrivate: s.privateKey, recipientPublic: r.publicKey }, bytes(10));
+		expect(sealNumber(keyed)).toMatch(/^[0-9A-F]{4}·[0-9A-F]{4}$/);
+		expect(sealNumber(keyed.subarray(0, 13))).toBe(sealNumber(keyed));
+	});
+
+	it('differs between two encryptions of the same file', async () => {
+		const a = await encrypt({ password: PASSWORD, ...FAST }, bytes(10));
+		const b = await encrypt({ password: PASSWORD, ...FAST }, bytes(10));
+		expect(sealNumber(a)).not.toBe(sealNumber(b));
 	});
 });
