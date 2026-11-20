@@ -168,7 +168,7 @@
 					</button>
 				</div>
 			{:else}
-				<p class="checked" tabindex="-1" use:focusOnMount>
+				<p class="checked landing" tabindex="-1" use:focusOnMount>
 					{#if running}
 						<strong>Checking each file…</strong>
 					{:else if openedCount === jobs.length}

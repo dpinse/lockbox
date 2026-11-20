@@ -2,17 +2,29 @@
 	import Icon from './Icon.svelte';
 	import { focusOnMount } from '#lib/focus.ts';
 	import { encodeKey, generateKeyPair } from '#lib/lockbox/keys.ts';
+	import { downloadText } from '#lib/download.ts';
 
 	// Creates a key pair inside the Encrypt flow, so a sender without keys keeps their files and progress.
-	let { oncreate }: { oncreate: (privateText: string) => void } = $props();
+	let {
+		oncreate,
+		saved = $bindable(true)
+	}: { oncreate: (privateText: string) => void; saved?: boolean } = $props();
 
 	let pair = $state<{ publicText: string; privateText: string } | null>(null);
-	let saved = $state(false);
+
+	// A key made here exists only on this page until it is downloaded or copied.
+	$effect(() => {
+		if (!pair || saved) return;
+		const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+		addEventListener('beforeunload', warn);
+		return () => removeEventListener('beforeunload', warn);
+	});
 	let copied = $state('');
 
 	function create() {
 		const { publicKey, privateKey } = generateKeyPair();
 		pair = { publicText: encodeKey('public', publicKey), privateText: encodeKey('private', privateKey) };
+		saved = false;
 		oncreate(pair.privateText);
 	}
 
@@ -25,12 +37,7 @@
 
 	function download() {
 		if (!pair) return;
-		const url = URL.createObjectURL(new Blob([pair.privateText + '\n'], { type: 'text/plain' }));
-		const a = Object.assign(document.createElement('a'), { href: url, download: 'lockbox-private-key.txt' });
-		document.body.append(a);
-		a.click();
-		a.remove();
-		setTimeout(() => URL.revokeObjectURL(url), 10_000);
+		downloadText('lockbox-private-key.txt', pair.privateText + '\n');
 		saved = true;
 	}
 </script>
@@ -41,7 +48,7 @@
 		<button class="btn-link" type="button" onclick={create}>Create one here</button>
 	</p>
 {:else}
-	<div class="made" tabindex="-1" use:focusOnMount>
+	<div class="made landing" tabindex="-1" use:focusOnMount>
 		<p class="title"><Icon name="key" size={18} /><strong>Your new key pair</strong></p>
 		<p class="hint">Your private key is filled in above. Save it: you need it to open files people send you, and lockbox can't recover it.</p>
 		<div class="row">

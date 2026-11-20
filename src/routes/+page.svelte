@@ -14,6 +14,7 @@
 	import type { EncryptSecret } from '#lib/lockbox/format.ts';
 	import { encodeKey, keyFromFragment, publicFromPrivate } from '#lib/lockbox/keys.ts';
 	import InlineKeyPair from '#lib/components/InlineKeyPair.svelte';
+	import { downloadText } from '#lib/download.ts';
 	import { MIN_PASSWORD_LENGTH } from '#lib/password.ts';
 	import { failureMessage, streaming, today } from '#lib/messages.ts';
 	import { focusOnMount } from '#lib/focus.ts';
@@ -32,6 +33,7 @@
 	let copied = $state(false);
 	let sharedFor = $state(''); // recipient key that arrived in a share link
 	let copiedPublic = $state(false);
+	let newKeySaved = $state(true); // false while a key pair made in step 2 is unsaved
 	let cardPulse = $state(0);
 	let pulsedOnSave = false;
 
@@ -162,7 +164,7 @@
 				{:else}
 					<KeyField label="Recipient's public key" kind="public" hint={sharedFor && recipientPublicText === sharedFor ? 'Filled in from the link you opened.' : 'Only the person with the matching private key can open the file.'} bind:value={recipientPublicText} bind:key={recipientPublic} />
 					<KeyField label="Your private key" kind="private" hint="Proves the file came from you. It never leaves this device." bind:value={senderPrivateText} bind:key={senderPrivate} />
-					<InlineKeyPair oncreate={(text) => (senderPrivateText = text)} />
+					<InlineKeyPair oncreate={(text) => (senderPrivateText = text)} bind:saved={newKeySaved} />
 				{/if}
 			</div>
 			<div class="actions">
@@ -187,7 +189,7 @@
 				</div>
 			{:else}
 				{#if running || sealedCount}
-					<div class="sealed" tabindex="-1" use:focusOnMount>
+					<div class="sealed landing" tabindex="-1" use:focusOnMount>
 						<Logo size={40} pulse={cardPulse} />
 						<p>
 							{#if running}
@@ -211,6 +213,17 @@
 							The recipient sees the same seal number when they open the file, so you can confirm it's the right one.
 						</span>
 					</p>
+					{#if mode === 'key' && !newKeySaved}
+						<div class="notice danger" role="alert">
+							<Icon name="alert" size={18} />
+							<div>
+								<p><strong>Your new private key isn't saved.</strong> You need it to open files people send you, and lockbox can't recover it.</p>
+								<button class="btn key-save" type="button" onclick={() => (downloadText('lockbox-private-key.txt', senderPrivateText + '\n'), (newKeySaved = true))}>
+									<Icon name="download" size={18} />Download private key
+								</button>
+							</div>
+						</div>
+					{/if}
 					{#if mode === 'key' && senderPublicText}
 						<div class="your-key">
 							<span class="mono">{senderPublicText}</span>
@@ -237,6 +250,12 @@
 	}
 	.notice {
 		margin-top: 16px;
+	}
+	.notice strong {
+		font-weight: 600;
+	}
+	.key-save {
+		margin-top: 10px;
 	}
 	.for {
 		margin-bottom: 14px;

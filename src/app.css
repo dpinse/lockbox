@@ -148,6 +148,16 @@ a {
 	outline: 2px solid transparent;
 	box-shadow: var(--focus);
 }
+.landing:focus:not(:focus-visible) {
+	box-shadow: none;
+}
+/* Places focus lands after an action (status lines, panels): a lighter ring than pressable controls. */
+.landing:focus-visible {
+	box-shadow: none;
+	outline: 2px solid var(--blue);
+	outline-offset: 3px;
+	border-radius: 5px;
+}
 .mono {
 	font-family: var(--mono);
 	font-size: 0.8125rem;

@@ -27,10 +27,10 @@
 
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import { focusOnMount } from '#lib/focus.ts';
 
 	// quietSave: another control ("Save all") is the step's primary action, so this row's Save steps back.
 	let { job, onsave, quietSave = false }: { job: SealJob; onsave?: () => void; quietSave?: boolean } = $props();
-	const pending = $derived(!!job.saveUrl && !job.saved);
 
 	const message = $derived(job.saveUrl && job.saved ? 'Download started' : job.message);
 	const pct = $derived(job.total ? Math.min(100, Math.round((job.done / job.total) * 100)) : 0);
@@ -47,7 +47,7 @@
 	);
 </script>
 
-<li class="row" class:pending data-state={job.state}>
+<li class="row" data-state={job.state}>
 	<div class="seal" aria-hidden={!job.seal}>
 		<span class="kind">{job.state === 'torn' ? 'BROKEN' : 'SEAL Nº'}</span>
 		<span class="mono num">{job.seal || '····-····'}</span>
@@ -57,7 +57,7 @@
 		<span class="name">{#each job.name.split(/(?<=[.\-_])/) as part, i (i)}{part}<wbr />{/each}</span>
 		{#if message}
 			<span class="msg">
-				{message}{#if job.saveUrl && job.saved}{' · '}<a class="again" href={job.saveUrl} download={job.name}>Save again<span class="visually-hidden"> {job.name}</span></a>{/if}
+				{message}{#if job.saveUrl && job.saved}{' · '}<a class="again" use:focusOnMount href={job.saveUrl} download={job.name}>Save again<span class="visually-hidden"> {job.name}</span></a>{/if}
 			</span>
 		{/if}
 		{#if job.seal}<span class="visually-hidden">Seal number {job.seal}.</span>{/if}
@@ -113,8 +113,6 @@
 		line-height: 1.4;
 	}
 	/* Working or waiting: the seal is drawn but not yet applied. */
-	/* Not saved yet: the seal is drawn but not applied; it lays in solid once the file is saved. */
-	.pending .seal,
 	[data-state='waiting'] .seal,
 	[data-state='working'] .seal,
 	[data-state='locked'] .seal,
@@ -241,7 +239,6 @@
 			border-right: 0;
 			border-bottom: 2px dashed rgb(255 255 255 / 0.7);
 		}
-		.pending .seal,
 		[data-state='waiting'] .seal,
 		[data-state='working'] .seal,
 		[data-state='locked'] .seal,

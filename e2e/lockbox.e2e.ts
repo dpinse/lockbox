@@ -243,3 +243,21 @@ test('a share-link visitor without keys can create them inline and send', async 
 	const opened = await download(page, () => decryptButton(page).click());
 	expect(opened.buffer.equals(original)).toBe(true);
 });
+
+test('focus follows a row Save and keeping an unsaved key pair', async ({ browser }) => {
+	const context = await browser.newContext({ serviceWorkers: 'block' });
+	const page = await context.newPage();
+	await encryptWithPassword(page, [{ name: 'a.txt', buffer: Buffer.from('a') }]);
+	await encryptButton(page).click();
+	const save = page.getByRole('link', { name: /^Save a\.txt/ });
+	await save.focus();
+	await Promise.all([page.waitForEvent('download'), page.keyboard.press('Enter')]);
+	await expect(page.getByRole('link', { name: /^Save again/ })).toBeFocused();
+
+	await page.goto('/keys');
+	await page.getByRole('button', { name: 'Create a key pair' }).click();
+	await page.getByRole('button', { name: 'Create a different key pair' }).click();
+	await page.getByRole('button', { name: 'Keep this pair' }).click();
+	await expect(page.getByRole('button', { name: 'Download as file' })).toBeFocused();
+	await context.close();
+});

@@ -2,6 +2,7 @@
 	import QRCode from 'qrcode';
 	import { tick } from 'svelte';
 	import { focusOnMount } from '#lib/focus.ts';
+	import { downloadText } from '#lib/download.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import { encodeKey, generateKeyPair, shareLink } from '#lib/lockbox/keys.ts';
 
@@ -12,6 +13,7 @@
 	let savedBy = $state<'download' | 'copy' | null>(null);
 	let confirmingNew = $state(false);
 	let publicHeading = $state<HTMLHeadingElement>();
+	let downloadButton = $state<HTMLButtonElement>();
 
 	// An unsaved private key exists only on this page; warn before it is lost.
 	$effect(() => {
@@ -20,6 +22,12 @@
 		addEventListener('beforeunload', warn);
 		return () => removeEventListener('beforeunload', warn);
 	});
+
+	async function keepPair() {
+		confirmingNew = false;
+		await tick();
+		downloadButton?.focus(); // the confirm is gone; saving the key is the next thing to do
+	}
 
 	function requestNew() {
 		if (savedPrivate) generate();
@@ -52,9 +60,7 @@
 
 	function downloadPrivate() {
 		if (!pair) return;
-		const url = URL.createObjectURL(new Blob([pair.privateText + '\n'], { type: 'text/plain' }));
-		Object.assign(document.createElement('a'), { href: url, download: 'lockbox-private-key.txt' }).click();
-		setTimeout(() => URL.revokeObjectURL(url), 10_000);
+		downloadText('lockbox-private-key.txt', pair.privateText + '\n');
 		savedPrivate = true;
 		savedBy = 'download';
 	}
@@ -82,7 +88,7 @@
 			<p class="hint">People need it to send you files, and to check files you send them.</p>
 			<p class="key mono">{pair.publicText}</p>
 			<div class="row">
-				<button class="btn" type="button" onclick={() => copy('public', pair!.publicText)}><Icon name={copied === 'public' ? 'check' : 'copy'} size={18} />{copied === 'public' ? 'Copied' : 'Copy key'}</button>
+				<button class="btn" type="button" onclick={() => copy('public', pair!.publicText)}><Icon name={copied === 'public' ? 'check' : 'copy'} size={18} />{copied === 'public' ? 'Copied' : 'Copy public key'}</button>
 				<button class="btn" type="button" aria-expanded={moreShare} aria-controls="more-share" onclick={() => (moreShare = !moreShare)}><Icon name="qr" size={18} />More ways to share</button>
 			</div>
 			{#if moreShare}
@@ -111,8 +117,8 @@
 			{/if}
 			<p class="key mono">{pair.privateText}</p>
 			<div class="row">
-				<button class="btn btn-primary" type="button" onclick={downloadPrivate}><Icon name={savedPrivate ? 'check' : 'download'} size={18} />{savedPrivate ? 'Downloaded' : 'Download as file'}</button>
-				<button class="btn" type="button" onclick={() => copy('private', pair!.privateText)}><Icon name={copied === 'private' ? 'check' : 'copy'} size={18} />{copied === 'private' ? 'Copied' : 'Copy key'}</button>
+				<button class="btn btn-primary" type="button" onclick={downloadPrivate} bind:this={downloadButton}><Icon name={savedPrivate ? 'check' : 'download'} size={18} />{savedPrivate ? 'Downloaded' : 'Download as file'}</button>
+				<button class="btn" type="button" onclick={() => copy('private', pair!.privateText)}><Icon name={copied === 'private' ? 'check' : 'copy'} size={18} />{copied === 'private' ? 'Copied' : 'Copy private key'}</button>
 			</div>
 		</div>
 
@@ -123,7 +129,7 @@
 					<p><strong>This private key isn't saved yet.</strong> A new pair replaces it for good.</p>
 					<div class="row">
 						<button class="btn" type="button" onclick={generate}>Replace it</button>
-						<button class="btn btn-primary" type="button" onclick={() => (confirmingNew = false)} use:focusOnMount>Keep this pair</button>
+						<button class="btn btn-primary" type="button" onclick={keepPair} use:focusOnMount>Keep this pair</button>
 					</div>
 				</div>
 			</div>
