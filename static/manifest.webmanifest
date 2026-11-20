@@ -1,0 +1,15 @@
+{
+	"name": "lockbox",
+	"short_name": "lockbox",
+	"description": "Encrypt and decrypt files in your browser with a password or a key pair. Nothing is uploaded.",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"background_color": "#f2f3f5",
+	"theme_color": "#1e4ed8",
+	"icons": [
+		{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+		{ "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+		{ "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+	]
+}

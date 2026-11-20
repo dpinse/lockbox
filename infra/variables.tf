@@ -1,0 +1,40 @@
+variable "project" {
+  description = "Name prefix for every resource."
+  type        = string
+  default     = "lockbox"
+}
+
+variable "region" {
+  description = "Region for the S3 bucket. CloudFront itself is global."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "github_repo" {
+  description = "owner/name of the GitHub repository allowed to deploy."
+  type        = string
+  default     = "dpinse/lockbox"
+}
+
+variable "create_github_oidc_provider" {
+  description = "Set false if this AWS account already has the token.actions.githubusercontent.com OIDC provider."
+  type        = bool
+  default     = true
+}
+
+variable "budget_email" {
+  description = "Where budget alerts are sent."
+  type        = string
+}
+
+variable "budget_limit_usd" {
+  description = "Monthly spend that triggers alerts (80% actual, 100% forecast)."
+  type        = string
+  default     = "5"
+}
+
+variable "price_class" {
+  description = "CloudFront edge locations: PriceClass_100 (NA/EU, cheapest), _200, or _All."
+  type        = string
+  default     = "PriceClass_100"
+}

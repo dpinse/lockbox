@@ -1,0 +1,41 @@
+{
+	"name": "lockbox",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*"
+	},
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"test": "vitest run",
+		"test:e2e": "playwright test",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.65.1",
+		"@sveltejs/adapter-static": "^4.0.1",
+		"@sveltejs/kit": "^3.2.0",
+		"@sveltejs/vite-plugin-svelte": "^7.3.1",
+		"@types/libsodium-wrappers-sumo": "^0.7.8",
+		"@types/qrcode": "^1.5.6",
+		"svelte": "^5.57.3",
+		"svelte-check": "^4.7.8",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.8",
+		"vitest": "^5.1.1"
+	},
+	"dependencies": {
+		"@zxcvbn-ts/core": "^4.3.0",
+		"@zxcvbn-ts/language-common": "^4.2.0",
+		"@zxcvbn-ts/language-en": "^4.1.2",
+		"client-zip": "^2.5.1",
+		"libsodium-wrappers-sumo": "^0.8.4",
+		"qrcode": "^1.5.4"
+	}
+}

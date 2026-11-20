@@ -1,0 +1,748 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-20T14:20:46.061076+00:00",
+  "title": "Design System: lockbox",
+  "extensions": {
+    "colorMeta": {
+      "tape-blue": {
+        "role": "primary",
+        "displayName": "Security-Tape Blue",
+        "canonical": "#1e4ed8",
+        "tonalRamp": [
+          "#091741",
+          "#0f276c",
+          "#153797",
+          "#1a45be",
+          "#6283e4",
+          "#9aafed",
+          "#c7d3f5",
+          "#e8edfb"
+        ]
+      },
+      "tape-blue-hover": {
+        "role": "primary",
+        "displayName": "Tape Blue Pressed",
+        "canonical": "#1a43bb",
+        "tonalRamp": [
+          "#081438",
+          "#0d225e",
+          "#122f83",
+          "#173ba5",
+          "#5f7bcf",
+          "#98aae0",
+          "#c6d0ee",
+          "#e8ecf8"
+        ]
+      },
+      "tape-blue-text": {
+        "role": "primary",
+        "displayName": "Tape Blue Text",
+        "canonical": "#1e4ed8",
+        "tonalRamp": [
+          "#091741",
+          "#0f276c",
+          "#153797",
+          "#1a45be",
+          "#6283e4",
+          "#9aafed",
+          "#c7d3f5",
+          "#e8edfb"
+        ]
+      },
+      "tape-blue-wash": {
+        "role": "primary",
+        "displayName": "Tape Wash",
+        "canonical": "#e9eefc",
+        "tonalRamp": [
+          "#46474c",
+          "#74777e",
+          "#a3a7b0",
+          "#cdd1de",
+          "#f0f3fd",
+          "#f5f7fe",
+          "#fafbfe",
+          "#fdfdff"
+        ]
+      },
+      "seal": {
+        "role": "primary",
+        "displayName": "Seal Tape",
+        "canonical": "#1e4ed8",
+        "tonalRamp": [
+          "#091741",
+          "#0f276c",
+          "#153797",
+          "#1a45be",
+          "#6283e4",
+          "#9aafed",
+          "#c7d3f5",
+          "#e8edfb"
+        ]
+      },
+      "on-blue": {
+        "role": "neutral",
+        "displayName": "On Blue",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#4c4c4c",
+          "#808080",
+          "#b2b2b2",
+          "#e0e0e0",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "seal-red": {
+        "role": "secondary",
+        "displayName": "Seal Red",
+        "canonical": "#b4231a",
+        "tonalRamp": [
+          "#360a08",
+          "#5a120d",
+          "#7e1812",
+          "#9e1f17",
+          "#ca655f",
+          "#dd9c98",
+          "#ecc8c6",
+          "#f8e9e8"
+        ]
+      },
+      "seal-red-wash": {
+        "role": "secondary",
+        "displayName": "Red Wash",
+        "canonical": "#fbeae8",
+        "tonalRamp": [
+          "#4b4646",
+          "#7e7574",
+          "#b0a4a2",
+          "#ddcecc",
+          "#fcf0ef",
+          "#fdf6f5",
+          "#fefaf9",
+          "#fffdfd"
+        ]
+      },
+      "desk-grey": {
+        "role": "neutral",
+        "displayName": "Desk Grey",
+        "canonical": "#f2f3f5",
+        "tonalRamp": [
+          "#49494a",
+          "#797a7a",
+          "#a9aaac",
+          "#d5d6d8",
+          "#f6f7f8",
+          "#f9fafa",
+          "#fcfcfc",
+          "#fefefe"
+        ]
+      },
+      "card-white": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#4c4c4c",
+          "#808080",
+          "#b2b2b2",
+          "#e0e0e0",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "field-white": {
+        "role": "neutral",
+        "displayName": "Field White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#4c4c4c",
+          "#808080",
+          "#b2b2b2",
+          "#e0e0e0",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#15181d",
+        "tonalRamp": [
+          "#060709",
+          "#0a0c0e",
+          "#0f1114",
+          "#12151a",
+          "#5b5d61",
+          "#969799",
+          "#c4c5c6",
+          "#e8e8e8"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "#545b66",
+        "tonalRamp": [
+          "#191b1f",
+          "#2a2e33",
+          "#3b4047",
+          "#4a505a",
+          "#878c94",
+          "#b2b5ba",
+          "#d4d6d9",
+          "#eeeff0"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "#6b727d",
+        "tonalRamp": [
+          "#202226",
+          "#36393e",
+          "#4b5058",
+          "#5e646e",
+          "#979ca4",
+          "#bcc0c4",
+          "#dadcde",
+          "#f0f1f2"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e1e4e8",
+        "tonalRamp": [
+          "#444446",
+          "#707274",
+          "#9ea0a2",
+          "#c6c9cc",
+          "#eaecef",
+          "#f2f3f5",
+          "#f8f8f9",
+          "#fcfcfd"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "#c3c8d0",
+        "tonalRamp": [
+          "#3a3c3e",
+          "#626468",
+          "#888c92",
+          "#acb0b7",
+          "#d5d8de",
+          "#e4e6ea",
+          "#f0f1f3",
+          "#f9fafa"
+        ]
+      },
+      "quiet": {
+        "role": "neutral",
+        "displayName": "Quiet",
+        "canonical": "#e7e9ed",
+        "tonalRamp": [
+          "#454647",
+          "#747476",
+          "#a2a3a6",
+          "#cbcdd1",
+          "#eef0f2",
+          "#f4f5f7",
+          "#f9fafa",
+          "#fdfdfd"
+        ]
+      },
+      "seg-on": {
+        "role": "neutral",
+        "displayName": "Segment On",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#4c4c4c",
+          "#808080",
+          "#b2b2b2",
+          "#e0e0e0",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "tape-blue-dark": {
+        "role": "primary",
+        "displayName": "Security-Tape Blue (dark)",
+        "canonical": "#3563e9",
+        "tonalRamp": [
+          "#101e46",
+          "#1a3274",
+          "#2545a3",
+          "#2f57cd",
+          "#7292f0",
+          "#a4b9f5",
+          "#ccd8fa",
+          "#ebeffd"
+        ]
+      },
+      "tape-blue-hover-dark": {
+        "role": "primary",
+        "displayName": "Tape Blue Pressed (dark)",
+        "canonical": "#4a74ee",
+        "tonalRamp": [
+          "#162347",
+          "#253a77",
+          "#3451a7",
+          "#4166d1",
+          "#809ef3",
+          "#aec0f7",
+          "#d2dcfb",
+          "#edf1fd"
+        ]
+      },
+      "tape-blue-text-dark": {
+        "role": "primary",
+        "displayName": "Tape Blue Text (dark)",
+        "canonical": "#8fb0ff",
+        "tonalRamp": [
+          "#2b354c",
+          "#485880",
+          "#647bb2",
+          "#7e9be0",
+          "#b1c8ff",
+          "#cddbff",
+          "#e3ebff",
+          "#f4f7ff"
+        ]
+      },
+      "tape-blue-wash-dark": {
+        "role": "primary",
+        "displayName": "Tape Wash (dark)",
+        "canonical": "#1b2440",
+        "tonalRamp": [
+          "#080b13",
+          "#0e1220",
+          "#13192d",
+          "#182038",
+          "#5f6679",
+          "#989ca9",
+          "#c6c8cf",
+          "#e8e9ec"
+        ]
+      },
+      "seal-dark": {
+        "role": "primary",
+        "displayName": "Seal Tape (dark)",
+        "canonical": "#2f5be0",
+        "tonalRamp": [
+          "#0e1b43",
+          "#182e70",
+          "#21409d",
+          "#2950c5",
+          "#6d8ce9",
+          "#a1b5f1",
+          "#cbd6f7",
+          "#eaeffc"
+        ]
+      },
+      "seal-red-dark": {
+        "role": "secondary",
+        "displayName": "Seal Red (dark)",
+        "canonical": "#ff8a80",
+        "tonalRamp": [
+          "#4c2926",
+          "#804540",
+          "#b2615a",
+          "#e07971",
+          "#ffada6",
+          "#ffcac6",
+          "#ffe2df",
+          "#fff3f2"
+        ]
+      },
+      "seal-red-wash-dark": {
+        "role": "secondary",
+        "displayName": "Red Wash (dark)",
+        "canonical": "#3a1d1b",
+        "tonalRamp": [
+          "#110908",
+          "#1d0e0e",
+          "#291413",
+          "#331a18",
+          "#75615f",
+          "#a69998",
+          "#cec6c6",
+          "#ebe8e8"
+        ]
+      },
+      "desk-grey-dark": {
+        "role": "neutral",
+        "displayName": "Desk Grey (dark)",
+        "canonical": "#111316",
+        "tonalRamp": [
+          "#050607",
+          "#080a0b",
+          "#0c0d0f",
+          "#0f1113",
+          "#585a5c",
+          "#949596",
+          "#c4c4c5",
+          "#e7e7e8"
+        ]
+      },
+      "card-dark": {
+        "role": "neutral",
+        "displayName": "Card White (dark)",
+        "canonical": "#191c20",
+        "tonalRamp": [
+          "#08080a",
+          "#0c0e10",
+          "#121416",
+          "#16191c",
+          "#5e6063",
+          "#98999b",
+          "#c6c6c7",
+          "#e8e8e9"
+        ]
+      },
+      "field-dark": {
+        "role": "neutral",
+        "displayName": "Field White (dark)",
+        "canonical": "#14171a",
+        "tonalRamp": [
+          "#060708",
+          "#0a0c0d",
+          "#0e1012",
+          "#121417",
+          "#5a5d5f",
+          "#959798",
+          "#c4c5c6",
+          "#e8e8e8"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Ink (dark)",
+        "canonical": "#e8eaed",
+        "tonalRamp": [
+          "#464647",
+          "#747576",
+          "#a2a4a6",
+          "#ccced1",
+          "#eff0f2",
+          "#f5f6f7",
+          "#f9fafa",
+          "#fdfdfd"
+        ]
+      },
+      "ink-2-dark": {
+        "role": "neutral",
+        "displayName": "Ink 2 (dark)",
+        "canonical": "#a7aeb8",
+        "tonalRamp": [
+          "#323437",
+          "#54575c",
+          "#757a81",
+          "#9399a2",
+          "#c1c6cd",
+          "#d7dbdf",
+          "#e9ebed",
+          "#f6f7f8"
+        ]
+      },
+      "ink-3-dark": {
+        "role": "neutral",
+        "displayName": "Ink 3 (dark)",
+        "canonical": "#8c939d",
+        "tonalRamp": [
+          "#2a2c2f",
+          "#464a4e",
+          "#62676e",
+          "#7b818a",
+          "#aeb3ba",
+          "#cbced3",
+          "#e2e4e6",
+          "#f4f4f5"
+        ]
+      },
+      "line-dark": {
+        "role": "neutral",
+        "displayName": "Hairline (dark)",
+        "canonical": "#2a2e34",
+        "tonalRamp": [
+          "#0d0e10",
+          "#15171a",
+          "#1d2024",
+          "#25282e",
+          "#6a6d71",
+          "#9fa1a4",
+          "#cacbcc",
+          "#eaeaeb"
+        ]
+      },
+      "line-strong-dark": {
+        "role": "neutral",
+        "displayName": "Strong Hairline (dark)",
+        "canonical": "#41464e",
+        "tonalRamp": [
+          "#141517",
+          "#202327",
+          "#2e3137",
+          "#393e45",
+          "#7a7e83",
+          "#aaacaf",
+          "#d0d1d3",
+          "#ececed"
+        ]
+      },
+      "quiet-dark": {
+        "role": "neutral",
+        "displayName": "Quiet (dark)",
+        "canonical": "#23272c",
+        "tonalRamp": [
+          "#0a0c0d",
+          "#121416",
+          "#181b1f",
+          "#1f2227",
+          "#65686b",
+          "#9c9ea0",
+          "#c8c9ca",
+          "#e9e9ea"
+        ]
+      },
+      "seg-on-dark": {
+        "role": "neutral",
+        "displayName": "Segment On (dark)",
+        "canonical": "#3a4048",
+        "tonalRamp": [
+          "#111316",
+          "#1d2024",
+          "#292d32",
+          "#33383f",
+          "#75797f",
+          "#a6a9ad",
+          "#cecfd1",
+          "#ebeced"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The one centred page title."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section heads inside the card (Key pair halves)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Stepper step titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running copy and the promise line."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Hints, errors, notices, summaries, footer."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Button labels."
+      },
+      "seal-kind": {
+        "displayName": "Seal Kind",
+        "purpose": "The SEAL Nº / BROKEN legend on seal strips only."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Seal serials, keys, file sizes, passwords. Martian Mono only here."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 1px 2px rgb(21 24 29 / 0.05), 0 8px 24px rgb(21 24 29 / 0.06)",
+        "purpose": "The working card (light)."
+      },
+      {
+        "name": "card-dark",
+        "value": "0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.25)",
+        "purpose": "The working card (dark)."
+      },
+      {
+        "name": "segment-lift",
+        "value": "0 1px 2px rgb(0 0 0 / 0.1)",
+        "purpose": "Selected segment in page nav and segmented control."
+      },
+      {
+        "name": "focus",
+        "value": "0 0 0 3px rgb(30 78 216 / 0.35)",
+        "purpose": "Focus ring (light), with transparent 2px outline."
+      },
+      {
+        "name": "focus-dark",
+        "value": "0 0 0 3px rgb(143 176 255 / 0.45)",
+        "purpose": "Focus ring (dark)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Seal lay, lid close, progress bar."
+      },
+      {
+        "name": "state",
+        "value": "150ms",
+        "purpose": "Colour and border transitions on controls."
+      },
+      {
+        "name": "seal-lay",
+        "value": "520ms clip-path inset reveal from left",
+        "purpose": "Seal strip laid across a finished row."
+      },
+      {
+        "name": "lid-close",
+        "value": "760ms",
+        "purpose": "Logo lid lifts and drops shut once on encrypt success; none under reduced motion."
+      },
+      {
+        "name": "progress",
+        "value": "300ms width",
+        "purpose": "Row progress bar."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "520px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one forward action of a step: Next, Encrypt, Decrypt.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Encrypt</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border-radius:var(--radius-sm,7px);border:1px solid var(--line-strong,#c3c8d0);background:var(--card,#fff);color:var(--ink,#15181d);font:600 15px/1 var(--font,'Archivo',system-ui,sans-serif);cursor:pointer;transition:background 150ms,border-color 150ms,color 150ms}.ds-btn:focus-visible{outline:2px solid transparent;box-shadow:var(--focus,0 0 0 3px rgb(30 78 216 / .35))}.ds-btn-primary{background:var(--blue,#1e4ed8);border-color:var(--blue,#1e4ed8);color:var(--on-blue,#fff)}.ds-btn-primary:hover{background:var(--blue-hover,#1a43bb);border-color:var(--blue-hover,#1a43bb)}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Supporting actions beside the primary, often with a leading icon.",
+      "html": "<button class=\"ds-btn2\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"9\" y=\"9\" width=\"12\" height=\"12\" rx=\"2\"/><path d=\"M5 15V5a2 2 0 0 1 2-2h10\"/></svg>Copy password</button>",
+      "css": ".ds-btn2{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:var(--radius-sm,7px);border:1px solid var(--line-strong,#c3c8d0);background:var(--card,#fff);color:var(--ink,#15181d);font:600 15px/1 var(--font,'Archivo',system-ui,sans-serif);cursor:pointer;transition:border-color 150ms}.ds-btn2:hover{border-color:var(--ink-3,#6b727d)}.ds-btn2:focus-visible{outline:2px solid transparent;box-shadow:var(--focus,0 0 0 3px rgb(30 78 216 / .35))}"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Text, password and key inputs; blue border and ring on focus, red border when invalid.",
+      "html": "<label class=\"ds-label\" for=\"ds-pw\">Password</label><div class=\"ds-field\"><input id=\"ds-pw\" class=\"ds-mono\" placeholder=\"At least 12 characters\"></div>",
+      "css": ".ds-label{display:block;font:600 14px/1.5 var(--font,'Archivo',system-ui,sans-serif);color:var(--ink,#15181d);margin-bottom:6px}.ds-field{display:flex;align-items:center;min-height:48px;border:1px solid var(--line-strong,#c3c8d0);border-radius:var(--radius-sm,7px);background:var(--field,#fff);transition:border-color 150ms,box-shadow 150ms}.ds-field:focus-within{border-color:var(--blue,#1e4ed8);box-shadow:var(--focus,0 0 0 3px rgb(30 78 216 / .35))}.ds-field input{flex:1;min-width:0;border:0;background:none;color:var(--ink,#15181d);padding:12px 14px;outline:none;font:15px/1.4 var(--font,'Archivo',system-ui,sans-serif)}.ds-field input.ds-mono{font-family:var(--mono,'Martian Mono',ui-monospace,monospace);font-size:13px}.ds-field input::placeholder{color:var(--ink-3,#6b727d)}"
+    },
+    {
+      "name": "Page Nav",
+      "kind": "nav",
+      "refersTo": "page-nav",
+      "description": "Encrypt | Decrypt toggle under the page title; a pair of links in a quiet track.",
+      "html": "<nav class=\"ds-pnav\"><a href=\"#\" aria-current=\"page\">Encrypt</a><a href=\"#\">Decrypt</a></nav>",
+      "css": ".ds-pnav{display:grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:var(--radius,10px);background:var(--quiet,#e7e9ed);font-family:var(--font,'Archivo',system-ui,sans-serif)}.ds-pnav a{padding:10px;border-radius:var(--radius-sm,7px);text-align:center;font-weight:500;color:var(--ink-2,#545b66);text-decoration:none;transition:background 150ms,color 150ms}.ds-pnav a:hover{color:var(--ink,#15181d)}.ds-pnav a:focus-visible{outline:2px solid transparent;box-shadow:var(--focus,0 0 0 3px rgb(30 78 216 / .35))}.ds-pnav a[aria-current=page]{background:var(--seg-on,#fff);color:var(--ink,#15181d);font-weight:600;box-shadow:0 1px 2px rgb(0 0 0 / .08)}"
+    },
+    {
+      "name": "Stepper",
+      "kind": "custom",
+      "refersTo": "step-marker",
+      "description": "Vertical three-step spine; blue markers for current and done steps.",
+      "html": "<ol class=\"ds-steps\"><li data-state=\"done\"><span class=\"ds-mk\">&#10003;</span><span class=\"ds-t\">Choose files <small>2 files</small></span></li><li data-state=\"current\"><span class=\"ds-mk\">2</span><span class=\"ds-t\">Choose a password or key</span></li><li data-state=\"todo\"><span class=\"ds-mk\">3</span><span class=\"ds-t\">Encrypt and save</span></li></ol>",
+      "css": ".ds-steps{list-style:none;margin:0;padding:0;font-family:var(--font,'Archivo',system-ui,sans-serif)}.ds-steps li{position:relative;display:grid;grid-template-columns:28px 1fr;column-gap:14px;padding-bottom:22px}.ds-steps li:last-child{padding-bottom:0}.ds-steps li:not(:last-child)::before{content:'';position:absolute;left:13.5px;top:32px;bottom:4px;width:1px;background:var(--line-strong,#c3c8d0)}.ds-mk{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:600 13px/1 inherit;background:var(--quiet,#e7e9ed);color:var(--ink-2,#545b66)}[data-state=current] .ds-mk,[data-state=done] .ds-mk{background:var(--blue,#1e4ed8);color:var(--on-blue,#fff)}.ds-t{padding-top:3px;font-size:16px;font-weight:600;line-height:1.4;color:var(--ink,#15181d)}.ds-t small{margin-left:8px;font-size:14px;font-weight:400;color:var(--ink-2,#545b66)}[data-state=todo] .ds-t{color:var(--ink-3,#6b727d);font-weight:500}"
+    },
+    {
+      "name": "Seal Row",
+      "kind": "custom",
+      "refersTo": "seal-strip",
+      "description": "Signature: each finished file gets a blue numbered seal strip; red and torn when altered.",
+      "html": "<div class=\"ds-seal-row\"><div class=\"ds-seal\"><span class=\"ds-kind\">SEAL N&ordm;</span><span class=\"ds-num\">105E&middot;D98F</span></div><div class=\"ds-info\"><span>tax-return-2025.pdf.lockbox</span><small>Saved to your downloads</small></div><span class=\"ds-status\">Sealed</span></div><div class=\"ds-seal-row ds-torn\"><div class=\"ds-seal\"><span class=\"ds-kind\">BROKEN</span><span class=\"ds-num\">BDBD&middot;A080</span></div><div class=\"ds-info\"><span>passport-scan.jpg.lockbox</span><small>This file was changed after it was sealed.</small></div><span class=\"ds-status\">Seal broken</span></div>",
+      "css": ".ds-seal-row{display:grid;grid-template-columns:156px 1fr auto;align-items:center;min-height:60px;margin-bottom:8px;border:1px solid var(--line,#e1e4e8);border-radius:var(--radius-sm,7px);background:var(--card,#fff);overflow:hidden;font-family:var(--font,'Archivo',system-ui,sans-serif);color:var(--ink,#15181d)}.ds-seal{align-self:stretch;display:flex;flex-direction:column;justify-content:center;padding:0 14px;background:var(--seal,#1e4ed8);color:var(--on-blue,#fff);border-right:2px dashed rgb(255 255 255 / .7);animation:ds-lay 520ms cubic-bezier(.16,1,.3,1) both}.ds-kind{font:600 10px/1.2 inherit;letter-spacing:.12em;opacity:.85}.ds-num{font:600 13px/1.4 var(--mono,'Martian Mono',ui-monospace,monospace);font-variant-numeric:tabular-nums}.ds-info{display:flex;flex-direction:column;min-width:0;padding:10px 16px;font-weight:500}.ds-info small{font-size:14px;font-weight:400;color:var(--ink-2,#545b66)}.ds-status{padding-right:16px;font-size:14px;font-weight:600;color:var(--blue-text,#1e4ed8)}.ds-torn .ds-seal{background:var(--red,#b4231a);color:var(--card,#fff);border-right-color:transparent;animation:none}.ds-torn .ds-status,.ds-torn .ds-info small{color:var(--red,#b4231a)}@keyframes ds-lay{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}@media (prefers-reduced-motion:reduce){.ds-seal{animation:none}}"
+    },
+    {
+      "name": "Notice",
+      "kind": "card",
+      "refersTo": "notice",
+      "description": "Inline guidance in tape wash; danger variant in red wash for irreversible loss.",
+      "html": "<div class=\"ds-notice\">Send the password separately from the file, for example by phone.</div><div class=\"ds-notice ds-danger\">If you lose your Private key, files sent to you cannot be opened.</div>",
+      "css": ".ds-notice{padding:12px 14px;margin-bottom:8px;border-radius:var(--radius-sm,7px);background:var(--blue-soft,#e9eefc);color:var(--ink,#15181d);font:14px/1.5 var(--font,'Archivo',system-ui,sans-serif)}.ds-danger{background:var(--red-soft,#fbeae8)}"
+    },
+    {
+      "name": "Working Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The single raised white surface on the grey desk.",
+      "html": "<div class=\"ds-card\">Card content</div>",
+      "css": ".ds-card{background:var(--card,#fff);border:1px solid var(--line,#e1e4e8);border-radius:14px;box-shadow:var(--shadow,0 1px 2px rgb(21 24 29 / .05),0 8px 24px rgb(21 24 29 / .06));padding:28px;color:var(--ink,#15181d);font-family:var(--font,'Archivo',system-ui,sans-serif)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Tamper-Evident Seal",
+    "overview": "lockbox is a calm sealing desk. A file goes in, a numbered seal comes out. The ground is a cool pale grey, the work happens on a single white card, and everything is near-black ink except one colour: security-tape blue, the blue of the tape that goes across a parcel to prove nobody opened it. That blue marks the step you are on, the button that moves you forward, and the seal strip laid across each finished file. Red appears only when a seal is broken or something has gone wrong.\n\nThe structure is borrowed openly from hat.sh: a centred title with a one-line promise, an Encrypt | Decrypt toggle, and a vertical three-step stepper with one step open at a time. The density is low and the copy is short. Personality lives in two places only: the treasure-box logo, whose lid closes once when a file is encrypted, and the seal strip with its white mono serial and perforated edge. The rest of the interface stays quiet so those two moments read.\n\nLight and dark themes are full peers. Both follow the system setting and can be forced with the header toggle; every colour token has a dark counterpart.",
+    "keyCharacteristics": [
+      "One accent (tape blue), spent only on the active step, the primary action and seals.",
+      "Red is a signal for broken seals, errors and irreversible loss, never decoration.",
+      "Archivo for every word of interface; Martian Mono only for data.",
+      "A single white card on a grey desk, with one soft ambient shadow.",
+      "Gently rounded corners (7px controls, 14px card), 1px hairlines, dashed edges for \"not yet sealed\"."
+    ],
+    "rules": [
+      {
+        "name": "The Tape Rule",
+        "body": "Tape blue fills only three things: the active or completed step marker, the step's primary button, and the seal strip. Everything else that needs blue (links, status, notices) uses the text or wash variant, never a solid fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The Broken Seal Rule",
+        "body": "Red means \"this is broken, failed, or cannot be undone\". A torn seal, an error, an invalid field, a weak password, a Private key that must never be shared. It never appears as a brand colour or for emphasis.",
+        "section": "colors"
+      },
+      {
+        "name": "The Data Face Rule",
+        "body": "Martian Mono is for values a person might compare, copy or read aloud: seal numbers, keys, sizes, passwords. Labels, headings, buttons and prose are always Archivo.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Card Rule",
+        "body": "A page has one raised surface: the white card. Nothing inside it casts a shadow; inner groups use hairlines or a wash.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** spend solid tape blue only on the current or completed step marker, the step's primary button and the seal strip (The Tape Rule).",
+      "**Do** keep one primary button per step, taking the remaining width of its action row.",
+      "**Do** set seal numbers, keys, file sizes and passwords in Martian Mono at 13px with tabular figures, and everything else in Archivo.",
+      "**Do** use a dashed edge for anything still open or unsealed, and turn it solid once complete.",
+      "**Do** give every colour a dark-theme counterpart and check both themes; dark uses the lighter tape-blue-text for blue text.",
+      "**Do** keep the page to one centred title, one promise line and one white card.",
+      "**Do** show focus with the 3px blue ring plus a transparent outline."
+    ],
+    "donts": [
+      "**Don't** use red for anything that is not broken, failed, invalid or irreversible.",
+      "**Don't** fill a whole header band, page background or large area with tape blue; the calm grey ground is part of the pinned hat.sh look.",
+      "**Don't** put Martian Mono on labels, headings or buttons.",
+      "**Don't** add shadows inside the card or raise a second surface on the page (The One Card Rule).",
+      "**Don't** spread the treasure box beyond the logo and its single lid-closing animation.",
+      "**Don't** reuse the seal-kind legend style (10px tracked capitals) outside the seal strip; it is the tape's printing, not a heading style."
+    ]
+  }
+}
