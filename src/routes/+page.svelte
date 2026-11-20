@@ -210,7 +210,7 @@
 						<Icon name="key" size={18} />
 						<span>
 							{#if mode === 'password'}Send the password separately, for example by phone.{:else}Send your public key along with the file: the recipient needs it to open it.{/if}
-							The recipient sees the same seal number when they open the file, so you can confirm it's the right one.
+							The seal number helps you both tell files apart; it isn't proof of what's inside.
 						</span>
 					</p>
 					{#if mode === 'key' && !newKeySaved}

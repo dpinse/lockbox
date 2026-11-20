@@ -138,7 +138,7 @@ A Public key is shared as `https://<host>/#to=lockbox-pub-<base64url>`. The key 
 
 ### Seal number
 
-The app labels each Lockbox file with its seal number: the first 4 bytes of the stream header as uppercase hex, split in two (`4F2A·91C0`). It is public, random per file, and lets a Sender and Recipient confirm they hold the same file. It is not a checksum and proves nothing about integrity; decryption does that.
+The app labels each Lockbox file with its seal number: the first 4 bytes of the stream header as uppercase hex, split in two (`4F2A·91C0`). It is public and random per file, and helps a Sender and Recipient tell files apart. It is not bound to the contents: anyone who can decrypt a file can build a different one with the same seal number. It proves nothing about integrity; decryption does that.
 
 ## File names
 

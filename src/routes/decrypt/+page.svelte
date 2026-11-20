@@ -61,7 +61,7 @@
 	const hasLocked = $derived(jobs.some((j) => j.state === 'locked'));
 	const tornCount = $derived(jobs.filter((j) => j.state === 'torn').length);
 	const hasTorn = $derived(tornCount > 0);
-	let tornStreamed = $state(false);
+	let partialStreamed = $state(false); // a streamed download failed part-way, so part of a file may be on disk
 
 	const outputName = (name: string) =>
 		name.toLowerCase().endsWith('.lockbox') && name.length > 8 ? name.slice(0, -8) : `${name}.decrypted`;
@@ -72,6 +72,7 @@
 			mode === 'password' ? { password } : { recipientPrivate: recipientPrivate!, senderPublic: senderPublic! };
 		const streamed = streaming();
 		retried = false;
+		partialStreamed = false;
 		running = true;
 		jobs = files.map((f, i) => ({ name: outputName(f.name), seal: seals[i] ?? '', state: 'waiting', done: 0, total: f.size }));
 		for (const [i, file] of files.entries()) {
@@ -88,7 +89,7 @@
 				// A first chunk that won't open can't tell a wrong secret from tampering, so say both.
 				jobs[i].state = code === 'wrong-secret' ? 'locked' : code === 'altered' || code === 'incomplete' ? 'torn' : 'failed';
 				jobs[i].message = errorMessage[code]; // what to do next is in the note under the list
-				if (code === 'altered' || code === 'incomplete') tornStreamed = streamed;
+				if (streamed && code !== 'wrong-secret') partialStreamed = true; // wrong-secret fails before any download starts
 			}
 		}
 		running = false;
@@ -182,13 +183,13 @@
 				</ul>
 				{#if finished}
 					{#if !unsaved && jobs.every((j) => j.state === 'intact' && j.seal)}
-						<p class="notice compare"><Icon name="check" size={18} />Every seal is intact. If the seal numbers match the sender's, you have exactly the files they sent.</p>
+						<p class="notice compare"><Icon name="check" size={18} />Every seal is intact: {mode === 'key' ? "each file was sealed with the sender's key" : 'each file was sealed with this password'} and hasn't been changed since.</p>
 					{/if}
-					{#if hasTorn}
+					{#if hasTorn || partialStreamed}
 						<p class="notice danger next">
 							<Icon name="alert" size={18} />
-							{#if tornStreamed}If part of a broken file was saved, delete it: it is incomplete.{:else}{tornCount === 1 ? "The broken file wasn't saved." : "The broken files weren't saved."}{/if}
-							Ask the sender to send {tornCount === 1 ? 'it' : 'them'} again.
+							{#if partialStreamed}If part of a file was saved, delete it: it is incomplete.{:else}{tornCount === 1 ? "The broken file wasn't saved." : "The broken files weren't saved."}{/if}
+							{#if hasTorn}Ask the sender to send {tornCount === 1 ? 'it' : 'them'} again.{/if}
 						</p>
 					{/if}
 					<ResultActions bind:jobs moreLabel="Decrypt more files" onrestart={startOver} quietMore={hasLocked}>

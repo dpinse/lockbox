@@ -15,7 +15,7 @@ A single Lockbox file holding several Original files packed together, which decr
 _Avoid_: Archive, batch
 
 **Seal number**:
-A short public code identifying one Lockbox file, read from its header, so a Sender and Recipient can confirm they hold the same file.
+A short public label for one Lockbox file, read from its header, that helps a Sender and Recipient tell files apart; it says nothing about the contents.
 _Avoid_: File ID, checksum, fingerprint
 
 **Original file**:
