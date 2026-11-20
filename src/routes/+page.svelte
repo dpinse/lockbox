@@ -9,6 +9,7 @@
 	import SealRow, { type SealJob } from '#lib/components/SealRow.svelte';
 	import ResultActions from '#lib/components/ResultActions.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import Logo from '#lib/components/Logo.svelte';
 	import { JobError, runJob } from '#lib/lockbox/client.ts';
 	import type { EncryptSecret } from '#lib/lockbox/format.ts';
 	import { keyFromFragment } from '#lib/lockbox/keys.ts';
@@ -28,6 +29,20 @@
 	let jobs = $state<SealJob[]>([]);
 	let running = $state(false);
 	let copied = $state(false);
+	let cardPulse = $state(0);
+	let pulsedOnSave = false;
+
+	// The lid closes once the files are really on disk: at the end of a streamed run, or on the first Save.
+	function seal() {
+		sealPulse.count++;
+		cardPulse++;
+	}
+	$effect(() => {
+		if (!pulsedOnSave && jobs.some((j) => j.saved)) {
+			pulsedOnSave = true;
+			seal();
+		}
+	});
 
 	onMount(() => {
 		const shared = keyFromFragment(location.hash);
@@ -41,6 +56,7 @@
 	const secretOk = $derived(mode === 'password' ? password.length >= MIN_PASSWORD_LENGTH : !!senderPrivate && !!recipientPublic);
 	const finished = $derived(jobs.length > 0 && !running);
 	const unsaved = $derived(jobs.some((j) => j.saveUrl && !j.saved));
+	const sealedCount = $derived(jobs.filter((j) => j.state === 'sealed').length);
 	const filesSummary = $derived(`${files.length} ${files.length === 1 ? 'file' : 'files'}${willBundle ? ', bundled' : ''}`);
 
 	async function encrypt() {
@@ -72,7 +88,7 @@
 			}
 		}
 		running = false;
-		if (sealedAny) sealPulse.count++;
+		if (sealedAny && !jobs.some((j) => j.saveUrl)) seal();
 	}
 
 	async function copyPassword() {
@@ -87,6 +103,7 @@
 		bundle = false;
 		password = '';
 		jobs = [];
+		pulsedOnSave = false;
 		step = 1;
 	}
 
@@ -150,6 +167,20 @@
 					</button>
 				</div>
 			{:else}
+				{#if running || sealedCount}
+					<div class="sealed">
+						<Logo size={40} pulse={cardPulse} />
+						<p>
+							{#if running}
+								<strong>Sealing…</strong>
+								Encrypting on this device.
+							{:else}
+								<strong>{sealedCount === 1 ? '1 file sealed' : `${sealedCount} files sealed`}</strong>
+								{unsaved ? 'Save each one below to keep it.' : 'Only the right password or key can open it now.'}
+							{/if}
+						</p>
+					</div>
+				{/if}
 				<ul class="seal-list" aria-live="polite">
 					{#each jobs as job (job.name)}<SealRow {job} onsave={() => (job.saved = true)} />{/each}
 				</ul>
@@ -181,5 +212,18 @@
 	}
 	.notice {
 		margin-top: 16px;
+	}
+	.sealed {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		margin-bottom: 14px;
+		color: var(--ink-2);
+		font-size: 15px;
+	}
+	.sealed strong {
+		display: block;
+		color: var(--ink);
+		font-weight: 600;
 	}
 </style>
