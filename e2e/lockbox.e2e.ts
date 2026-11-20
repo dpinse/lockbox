@@ -192,3 +192,20 @@ test('a small file that will not open stays in step 3 with a retry', async ({ pa
 	await expect(page.getByRole('heading', { name: 'Enter the password' })).toBeFocused();
 	await expect(page.getByText('1 file', { exact: true })).toBeVisible(); // the chosen file is kept
 });
+
+test('an unsaved private key is not replaced without asking', async ({ page }) => {
+	await page.goto('/keys');
+	await page.getByRole('button', { name: 'Create a key pair' }).click();
+	const first = await page.locator('p.key').nth(1).innerText();
+
+	await page.getByRole('button', { name: 'Create a different key pair' }).click();
+	await expect(page.getByText("This private key isn't saved yet.")).toBeVisible();
+	await page.getByRole('button', { name: 'Keep this pair' }).click();
+	expect(await page.locator('p.key').nth(1).innerText()).toBe(first);
+
+	// Once downloaded, it is saved: no warning, and the next step is offered.
+	await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download as file' }).click()]);
+	await expect(page.getByRole('link', { name: 'Now encrypt a file' })).toBeVisible();
+	await page.getByRole('button', { name: 'Create a different key pair' }).click();
+	expect(await page.locator('p.key').nth(1).innerText()).not.toBe(first);
+});
