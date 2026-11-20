@@ -80,7 +80,7 @@
 				});
 				jobs[i].state = 'sealed';
 				jobs[i].saveUrl = saveUrl;
-				jobs[i].message = saveUrl ? 'Encrypted, not saved yet' : 'Saved to your downloads';
+				jobs[i].message = saveUrl ? 'Sealed, not saved yet' : 'Saved to your downloads';
 				sealedAny = true;
 			} catch (err) {
 				jobs[i].state = 'failed';
@@ -188,8 +188,8 @@
 					<p class="notice">
 						<Icon name="key" size={18} />
 						<span>
-							{#if mode === 'password'}Send the password separately from the file, for example by phone. Anyone with both can open it.{/if}
-							The recipient will see the same seal number when they open the file, so you can both confirm it's the right one.
+							{#if mode === 'password'}Send the password separately, for example by phone.{/if}
+							The recipient sees the same seal number when they open the file, so you can confirm it's the right one.
 						</span>
 					</p>
 					<ResultActions bind:jobs moreLabel="Encrypt more files" onrestart={startOver}>

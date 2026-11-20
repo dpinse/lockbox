@@ -111,7 +111,7 @@
 		box-shadow: none;
 	}
 	h2 {
-		border-radius: 4px;
+		border-radius: 5px;
 		font-size: 16px;
 		font-weight: 600;
 		line-height: 1.4;

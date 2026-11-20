@@ -73,7 +73,7 @@
 				});
 				jobs[i].state = 'intact';
 				jobs[i].saveUrl = saveUrl;
-				jobs[i].message = saveUrl ? 'Decrypted, not saved yet' : 'Saved to your downloads';
+				jobs[i].message = saveUrl ? 'Seal intact, not saved yet' : 'Saved to your downloads';
 			} catch (err) {
 				const code = err instanceof JobError ? err.code : 'unknown';
 				// A first chunk that won't open can't tell a wrong secret from tampering, so say both.

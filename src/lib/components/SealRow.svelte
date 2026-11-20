@@ -62,11 +62,13 @@
 		{#if job.seal}<span class="visually-hidden">Seal number {job.seal}.</span>{/if}
 	</div>
 	<div class="end">
+		{#if !(job.saveUrl && !job.saved)}
 		<span class="status">
 			{#if job.state === 'sealed' || job.state === 'intact'}<Icon name="check" size={16} />{/if}
 			{#if job.state === 'torn' || job.state === 'locked' || job.state === 'failed'}<Icon name="alert" size={16} />{/if}
 			{label}
 		</span>
+		{/if}
 		{#if job.saveUrl && !job.saved}
 			<a class="btn btn-primary save" href={job.saveUrl} download={job.name} onclick={onsave}><Icon name="download" size={16} />Save<span class="visually-hidden"> {job.name}</span></a>
 		{/if}
@@ -125,8 +127,8 @@
 		color: var(--ink-3);
 	}
 	[data-state='torn'] .seal {
-		background: var(--red);
-		color: var(--card);
+		background: var(--seal-broken);
+		color: var(--on-blue);
 		border-right-color: transparent;
 		animation: none;
 	}
@@ -198,6 +200,7 @@
 		margin-right: 0;
 	}
 	.again {
+		white-space: nowrap;
 		font-weight: 500;
 		color: var(--ink-2);
 	}
