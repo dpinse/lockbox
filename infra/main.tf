@@ -1,5 +1,5 @@
-# lockbox hosting: private S3 bucket behind CloudFront, security headers at the edge,
-# a keyless GitHub Actions deploy role, and a monthly budget alert.
+# lockbox hosting: private S3 bucket behind CloudFront on the free flat-rate plan, AWS's managed security headers,
+# and a keyless GitHub Actions deploy role.
 
 terraform {
   required_version = ">= 1.6"
@@ -120,46 +120,51 @@ resource "aws_cloudfront_function" "clean_urls" {
   code    = file("${path.module}/clean-urls.js")
 }
 
-# The page's own <meta> CSP (generated at build with script hashes) does the heavy lifting.
-# These are the headers a meta tag cannot set.
-resource "aws_cloudfront_response_headers_policy" "security" {
-  name = "${var.project}-security-headers"
+# CloudFront's free flat-rate plan (no overage charges, see the billing plan below) only allows AWS's managed
+# header policies, so this is theirs, not ours: HSTS for a year, nosniff, X-Frame-Options SAMEORIGIN, and a
+# referrer policy. The page's own <meta> CSP (generated at build with script hashes) does the heavy lifting.
+# Given up to get the cap: Permissions-Policy, Cross-Origin-Opener-Policy, and frame-ancestors 'none'.
+data "aws_cloudfront_response_headers_policy" "security" {
+  name = "Managed-SecurityHeadersPolicy"
+}
 
-  security_headers_config {
-    strict_transport_security {
-      access_control_max_age_sec = 63072000
-      include_subdomains         = true
-      preload                    = false
-      override                   = true
+# The flat-rate plan requires a web ACL on the distribution and covers its cost. One rule: block any single
+# address that sends more than 500 requests in five minutes (a full page load is a few dozen at most).
+resource "aws_wafv2_web_acl" "site" {
+  provider = aws.us_east_1 # CloudFront web ACLs live in us-east-1
+  name     = "${var.project}-site"
+  scope    = "CLOUDFRONT"
+
+  default_action {
+    allow {}
+  }
+
+  rule {
+    name     = "rate-limit"
+    priority = 1
+
+    action {
+      block {}
     }
-    content_type_options {
-      override = true
+
+    statement {
+      rate_based_statement {
+        limit              = 500
+        aggregate_key_type = "IP"
+      }
     }
-    frame_options {
-      frame_option = "DENY"
-      override     = true
-    }
-    referrer_policy {
-      referrer_policy = "no-referrer"
-      override        = true
-    }
-    content_security_policy {
-      content_security_policy = "frame-ancestors 'none'; object-src 'none'; base-uri 'none'"
-      override                = true
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.project}-rate-limit"
+      sampled_requests_enabled   = true
     }
   }
 
-  custom_headers_config {
-    items {
-      header   = "Permissions-Policy"
-      value    = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-      override = true
-    }
-    items {
-      header   = "Cross-Origin-Opener-Policy"
-      value    = "same-origin"
-      override = true
-    }
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${var.project}-site"
+    sampled_requests_enabled   = true
   }
 }
 
@@ -175,6 +180,7 @@ resource "aws_cloudfront_distribution" "site" {
   http_version        = "http2and3"
   is_ipv6_enabled     = true
   aliases             = local.custom_domain ? [var.domain_name] : []
+  web_acl_id          = aws_wafv2_web_acl.site.arn
 
   origin {
     origin_id                = "s3-site"
@@ -189,7 +195,7 @@ resource "aws_cloudfront_distribution" "site" {
     cached_methods             = ["GET", "HEAD"]
     compress                   = true
     cache_policy_id            = data.aws_cloudfront_cache_policy.optimized.id
-    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security.id
 
     function_association {
       event_type   = "viewer-request"
@@ -210,6 +216,18 @@ resource "aws_cloudfront_distribution" "site" {
     # The default *.cloudfront.net certificate only allows "TLSv1"; a custom certificate can require TLS 1.2+.
     minimum_protocol_version = local.custom_domain ? "TLSv1.2_2021" : "TLSv1"
   }
+}
+
+# ---------- Billing plan ----------
+
+# CloudFront's free flat-rate plan: no overage charges, so a flood of requests cannot run up a bill.
+# It needs the web ACL above and only AWS-managed header policies. An account allows three free plans,
+# and accounts on the AWS Free Tier are not eligible; delete this resource to stay on pay-as-you-go.
+resource "aws_pricingplanmanager_subscription" "site" {
+  provider      = aws.us_east_1
+  plan_family   = "CloudFront"
+  plan_tier     = "FREE"
+  resource_arns = [aws_cloudfront_distribution.site.arn, aws_wafv2_web_acl.site.arn]
 }
 
 # ---------- Keyless deploys from GitHub Actions ----------
@@ -266,39 +284,4 @@ resource "aws_iam_role_policy" "deploy" {
       }
     ]
   })
-}
-
-# ---------- Cost guardrail ----------
-
-# Scoped to resources tagged Project=<project> (every resource here gets it via default_tags), so other
-# workloads in a shared account don't trip lockbox's alerts. AWS applies the filter only once "Project"
-# is an active cost allocation tag: Billing console -> Cost allocation tags -> activate "Project".
-resource "aws_budgets_budget" "monthly" {
-  count        = var.create_budget ? 1 : 0
-  name         = "${var.project}-monthly"
-  budget_type  = "COST"
-  limit_amount = var.budget_limit_usd
-  limit_unit   = "USD"
-  time_unit    = "MONTHLY"
-
-  cost_filter {
-    name   = "TagKeyValue"
-    values = ["user:Project$${var.project}"]
-  }
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 80
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = [var.budget_email]
-  }
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 100
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "FORECASTED"
-    subscriber_email_addresses = [var.budget_email]
-  }
 }

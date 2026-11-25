@@ -28,29 +28,6 @@ variable "create_github_oidc_provider" {
   default     = true
 }
 
-variable "create_budget" {
-  description = "Create a monthly budget alert scoped to this project's tagged resources."
-  type        = bool
-  default     = true
-}
-
-variable "budget_email" {
-  description = "Where budget alerts are sent (unused when create_budget is false)."
-  type        = string
-  default     = ""
-
-  validation {
-    condition     = !var.create_budget || length(var.budget_email) > 3
-    error_message = "Set budget_email, or set create_budget = false."
-  }
-}
-
-variable "budget_limit_usd" {
-  description = "Monthly spend that triggers alerts (80% actual, 100% forecast)."
-  type        = string
-  default     = "5"
-}
-
 variable "domain_name" {
   description = "Optional custom domain, e.g. lockbox.example.com. Empty uses the *.cloudfront.net address."
   type        = string
@@ -58,7 +35,7 @@ variable "domain_name" {
 }
 
 variable "price_class" {
-  description = "CloudFront edge locations: PriceClass_100 (NA/EU, cheapest), _200, or _All."
+  description = "CloudFront edge locations. The flat-rate plan sets PriceClass_All and has no per-GB price, so leave this unless you drop the plan."
   type        = string
-  default     = "PriceClass_100"
+  default     = "PriceClass_All"
 }

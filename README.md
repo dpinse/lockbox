@@ -25,18 +25,18 @@ npm run build        # static site in build/
 
 ## Deploy (AWS S3 + CloudFront)
 
-Infrastructure is Terraform in [infra/](infra/): a private S3 bucket, CloudFront with security headers, a URL-rewrite function, a GitHub Actions deploy role (OIDC, no stored keys) and a monthly budget alert. Expected cost for a personal site is about $0–1/month.
+Infrastructure is Terraform in [infra/](infra/): a private S3 bucket, CloudFront on the free flat-rate plan with AWS's managed security headers and a rate-limiting firewall, a URL-rewrite function, and a GitHub Actions deploy role (OIDC, no stored keys). The flat-rate plan has no overage charges, so a flood of requests cannot run up a bill; in exchange it does not allow custom response headers, so lockbox gives up `Permissions-Policy`, `Cross-Origin-Opener-Policy` and `frame-ancestors 'none'` (other sites still cannot frame it). To keep those headers instead, delete `aws_pricingplanmanager_subscription` and restore a custom headers policy. Expected cost for a personal site is about $0–1/month.
 
 One-time setup, with the AWS CLI logged in:
 
 ```sh
 cd infra
-cp terraform.tfvars.example terraform.tfvars   # set budget_email
+cp terraform.tfvars.example terraform.tfvars   # then edit it
 terraform init
 terraform apply
 ```
 
-Sharing an AWS account with other projects? Every lockbox resource is tagged `Project=lockbox`, and the budget alert counts only that tag, so other workloads won't trip it. Activate `Project` under Billing → Cost allocation tags for the filter to take effect, or set `create_budget = false`. If you already deploy from GitHub Actions, set `create_github_oidc_provider = false` (an account can hold only one GitHub OIDC provider).
+Sharing an AWS account with other projects? Every lockbox resource is tagged `Project=lockbox`. There is no budget alert in this Terraform: the flat-rate plan caps CloudFront, so set up billing alerts for the account yourself. If you already deploy from GitHub Actions, set `create_github_oidc_provider = false` (an account can hold only one GitHub OIDC provider).
 
 The deploy role trusts only the `production` environment of this repository. In GitHub, Settings → Environments → production, set **Deployment branches** to `main` only (and optionally add yourself as a required reviewer), so nothing but reviewed code on `main` can deploy.
 

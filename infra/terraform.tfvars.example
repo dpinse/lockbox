@@ -1,11 +1,4 @@
 # Copy to terraform.tfvars (git-ignored) and fill in.
-budget_email = "you@example.com"
-
-# Shared AWS account? The budget only counts resources tagged Project=lockbox, but AWS applies that filter
-# only after you activate "Project" in Billing -> Cost allocation tags (it can take up to 24h to appear).
-# Or skip the budget entirely and rely on your account's existing alerts:
-# create_budget = false
-
 # Custom domain (DNS can stay in Cloudflare). See README → "Custom domain" for the two-step apply.
 # domain_name = "lockbox.example.com"
 

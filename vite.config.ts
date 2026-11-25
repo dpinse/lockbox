@@ -14,7 +14,8 @@ export default defineConfig({
 			adapter: adapter(),
 
 			// Prerendered pages get this as a <meta> CSP with hashes for SvelteKit's inline scripts.
-			// CloudFront adds what a meta tag cannot carry (frame-ancestors) plus the other security headers.
+			// CloudFront adds AWS's managed security headers (X-Frame-Options SAMEORIGIN, HSTS, nosniff); the free
+			// flat-rate plan does not allow custom ones, so app.html carries the referrer policy.
 			csp: {
 				mode: 'hash',
 				directives: {

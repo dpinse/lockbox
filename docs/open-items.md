@@ -51,7 +51,6 @@ Known gaps to address later, most important first. Each entry says what is wrong
 ## Operations
 
 - **Terraform state is local** (`infra/terraform.tfstate`). Move it to an S3 backend before anyone else runs `terraform apply`.
-- **Cost allocation tag:** activate `Project` under Billing → Cost allocation tags, or the budget filter counts nothing.
 - **JavaScript bundle is over 500 KB,** mostly libsodium. Consider lazy-loading it, or the standard (non-sumo) build if Argon2id can come from elsewhere.
 
 ## Accepted limits (documented, not planned)
